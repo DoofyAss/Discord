@@ -1,7 +1,7 @@
 
 
 
-module.exports = { DB }
+module.exports = { DB, get column() { return new Column() } }
 
 
 
@@ -57,6 +57,13 @@ class DataBase {
 				return value ? 'true' : 'false'
 			break
 		}
+	}
+
+
+
+	get BASE() {
+
+		return this.TABLE.split('.').shift()
 	}
 
 
@@ -193,6 +200,158 @@ class DataBase {
 
 		setTimeout(() => this.query())
 
+		return this
+	}
+
+
+
+	insert(data) {
+
+		let keys = Object.keys(data).join(', ')
+		let values = Object.values(data).map(value => this.type(value)).join(', ')
+
+		this.QUERY = `INSERT INTO ${ this.TABLE } (${ keys }) VALUES (${ values })`
+
+		setTimeout(() => this.query())
+
+		return this
+	}
+
+
+
+	delete(alter = true) {
+
+		this.QUERY = `DELETE FROM ${ this.TABLE }`
+
+		setTimeout(async () => {
+
+			await this.query()
+			if (alter) db.query(`ALTER TABLE ${ this.TABLE } AUTO_INCREMENT = 1;`)
+		})
+
+		return this
+	}
+
+
+
+	dropTable() {
+
+		this.QUERY = `DROP TABLE ${ this.TABLE }`
+		setTimeout(() => this.query())
+
+		return this
+	}
+
+
+
+	dropBase() {
+
+		this.QUERY = `DROP DATABASE ${ this.BASE }`
+		setTimeout(() => this.query())
+
+		return this
+	}
+
+
+
+	init(structure) {
+
+		let data = { column: [] }
+
+		Object.entries(structure).forEach(([name, column], i) => {
+
+			if (column.INCREMENT)
+			data.primarykey = `PRIMARY KEY (${name})`
+
+			data.column.push([
+
+				name,
+				column.TYPE,
+				column.UNIQUE,
+				column.NULL ? 'DEFAULT NULL' : 'NOT NULL',
+				column.INCREMENT,
+				column.COLLATE
+
+			].join(' ').replace(/\s+/g, ' ').trim())
+		})
+
+
+
+		if (data.primarykey)
+		data.column.push(data.primarykey)
+
+
+
+		setTimeout(async () => {
+
+			this.QUERY = `CREATE DATABASE IF NOT EXISTS ${ this.BASE } COLLATE utf8_general_ci`
+			await this.query()
+
+			this.QUERY = `CREATE TABLE IF NOT EXISTS ${ this.TABLE } (${ data.column.join(', ') }) ENGINE = MyISAM COLLATE utf8_general_ci`
+			await this.query()
+		})
+
+		return this
+	}
+}
+
+
+
+
+
+
+
+
+
+
+class Column {
+
+	get increment() { return new ColumnData('INT').increment }
+	get integer() { return new ColumnData('INT') }
+	get varchar() { return new ColumnData('VARCHAR(255)').collate }
+	get string() { return new ColumnData('TEXT').collate }
+}
+
+
+
+class ColumnData {
+
+
+
+	constructor(type) {
+
+		this.TYPE = type
+	}
+
+
+
+	get increment() {
+
+		this.INCREMENT = 'AUTO_INCREMENT'
+		return this
+	}
+
+
+
+	get collate() {
+
+		this.COLLATE = 'COLLATE utf8_general_ci'
+		return this
+	}
+
+
+
+	get unique() {
+
+		this.UNIQUE = 'UNIQUE'
+		return this
+	}
+
+
+
+	get null() {
+
+		this.NULL = true
 		return this
 	}
 }
