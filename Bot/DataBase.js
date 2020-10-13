@@ -37,6 +37,13 @@ class DataBase {
 
 
 
+	get BASE() {
+
+		return this.TABLE.split('.').shift()
+	}
+
+
+
 	type(value) {
 
 		switch (typeof value) {
@@ -57,13 +64,6 @@ class DataBase {
 				return value ? 'true' : 'false'
 			break
 		}
-	}
-
-
-
-	get BASE() {
-
-		return this.TABLE.split('.').shift()
 	}
 
 
