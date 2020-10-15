@@ -19,7 +19,13 @@ db.connect(error => {
 })
 
 
-function DB(table) {
+function DB(table, ...arg) {
+
+	if (arg.length == 2)
+	return new DataBase(table).where(arg[0], arg[1])
+
+	if (arg.length == 1)
+	return new DataBase(table).where('id', arg[0])
 
 	return new DataBase(table)
 }
@@ -142,11 +148,13 @@ class DataBase {
 
 		let result = await new Promise(result => {
 
-			console.log(`[${ this.SQL }]`)
+			// console.log(this.SQL)
 
 			db.query(this.SQL, (err, res) => {
 
-				if (err && this.catch) return this.catch(err.sqlMessage)
+				if (err && this.catch)
+				return this.catch(err.sqlMessage)
+
 				result(res)
 			})
 		})
@@ -256,29 +264,48 @@ class DataBase {
 
 	init(structure) {
 
-		let data = { column: [] }
+		let data = {
 
-		Object.entries(structure).forEach(([name, column], i) => {
+			sql: [],
+			columns: []
+		}
 
-			if (column.INCREMENT)
+		Object.entries(structure).forEach(([name, column]) => {
+
+			if (column.Increment)
 			data.primarykey = `PRIMARY KEY (${name})`
 
-			data.column.push([
+			data.sql.push([
 
 				name,
-				column.TYPE,
-				column.UNIQUE,
-				column.NULL ? 'DEFAULT NULL' : 'NOT NULL',
-				column.INCREMENT,
-				column.COLLATE
+				column.Type,
+				column.Unique,
+				column.Null ? 'NULL' : 'NOT NULL',
+				column.Increment,
+				column.Collate
 
 			].join(' ').replace(/\s+/g, ' ').trim())
+
+			data.columns.push({
+
+				Field: name,
+				Type: column.Type,
+				Null: column.Null ? 'NULL' : 'NOT NULL',
+				NullCondition: column.Null ? 'YES' : 'NO',
+
+				Key: {
+					column: name,
+					key: column.Increment ? 'PRIMARY' : column.Unique ? name : undefined
+				},
+
+				Previous: data.columns[data.columns.length - 1]
+			})
 		})
 
 
 
 		if (data.primarykey)
-		data.column.push(data.primarykey)
+		data.sql.push(data.primarykey)
 
 
 
@@ -287,11 +314,159 @@ class DataBase {
 			this.QUERY = `CREATE DATABASE IF NOT EXISTS ${ this.BASE } COLLATE utf8_general_ci`
 			await this.query()
 
-			this.QUERY = `CREATE TABLE IF NOT EXISTS ${ this.TABLE } (${ data.column.join(', ') }) ENGINE = MyISAM COLLATE utf8_general_ci`
+			this.QUERY = `CREATE TABLE IF NOT EXISTS ${ this.TABLE } (${ data.sql.join(', ') }) ENGINE = MyISAM COLLATE utf8_general_ci`
 			await this.query()
+
+			this.QUERY = `SHOW COLUMNS FROM ${ this.TABLE }`
+			let columns = await this.query()
+
+			this.QUERY = `SHOW INDEX FROM ${ this.TABLE }`
+			let indexes = await this.query()
+
+			this.alter(data.columns, columns, indexes)
 		})
 
 		return this
+	}
+
+
+
+	async alter(data, columns, indexes) {
+
+
+
+
+
+
+
+
+
+
+		let dataFields = data.map(column => column.Field)
+		let baseFields = columns.map(column => column.Field)
+
+		let add = data.filter(data => baseFields.indexOf(data.Field) < 0)
+		let drop = columns.filter(data => dataFields.indexOf(data.Field) < 0)
+
+		let addFields = add.map(column => column.Field)
+		let exists = data.filter(data => addFields.indexOf(data.Field) < 0)
+
+		let changes = exists.filter(exist => {
+
+			let base = columns.find(column => column.Field == exist.Field)
+
+			if (![
+
+				exist.Type == base.Type,
+				exist.NullCondition == base.Null
+
+			].every(condition => condition == true))
+
+			return true
+		})
+
+
+
+
+
+
+
+
+
+
+		// drop old columns
+
+		await drop.forEach(async column => {
+
+			this.QUERY = `ALTER TABLE ${ this.TABLE } DROP ${ column.Field }`
+			await this.query()
+		})
+
+
+
+		// add new columns
+
+		await add.forEach(async column => {
+
+			this.QUERY = [
+
+				'ALTER TABLE',
+				this.TABLE,
+				'ADD',
+				column.Field,
+				column.Type,
+				column.Null,
+				column.Previous ? `AFTER ${ column.Previous.Field }` : 'FIRST'
+
+			].join(' ')
+
+			await this.query()
+		})
+
+
+
+		// changes
+
+		await changes.forEach(async column => {
+
+			this.QUERY = [
+
+				'ALTER TABLE',
+				this.TABLE,
+				'CHANGE',
+				column.Field,
+				column.Field,
+				column.Type,
+				column.Null
+
+			].join(' ')
+
+			await this.query()
+		})
+
+
+
+		// indexes
+
+		let dataIndexes = data.map(column => column.Key)
+		let baseIndexes = indexes.map(column => {
+
+			return { column: column.Column_name, key: column.Key_name }
+		})
+
+
+		await dataIndexes.forEach(async index => {
+
+			let base = Object.assign({ column: undefined, key: undefined},
+			baseIndexes.find(baseIndex => baseIndex.column == index.column))
+
+			if (base.key != index.key) {
+
+				if (base.key == 'PRIMARY') {
+
+					this.QUERY = `ALTER TABLE ${ this.TABLE } DROP PRIMARY KEY`
+					await this.query()
+				}
+
+				if (base.key == index.column) {
+
+					this.QUERY = `ALTER TABLE ${ this.TABLE } DROP INDEX ${ index.column }`
+					await this.query()
+				}
+
+				if (index.key == 'PRIMARY') {
+
+					this.QUERY = `ALTER TABLE ${ this.TABLE } ADD PRIMARY KEY (${ index.column })`
+					await this.query()
+				}
+
+				if (index.key == index.column) {
+
+					this.QUERY = `ALTER TABLE ${ this.TABLE } ADD UNIQUE ${ index.column } (${ index.column })`
+					await this.query()
+				}
+			}
+		})
 	}
 }
 
@@ -306,10 +481,10 @@ class DataBase {
 
 class Column {
 
-	get increment() { return new ColumnData('INT').increment }
-	get integer() { return new ColumnData('INT') }
-	get varchar() { return new ColumnData('VARCHAR(255)').collate }
-	get string() { return new ColumnData('TEXT').collate }
+	get increment() { return new ColumnData('int').increment }
+	get integer() { return new ColumnData('int') }
+	get varchar() { return new ColumnData('varchar(255)').collate }
+	get string() { return new ColumnData('text').collate }
 }
 
 
@@ -320,14 +495,14 @@ class ColumnData {
 
 	constructor(type) {
 
-		this.TYPE = type
+		this.Type = type
 	}
 
 
 
 	get increment() {
 
-		this.INCREMENT = 'AUTO_INCREMENT'
+		this.Increment = 'AUTO_INCREMENT'
 		return this
 	}
 
@@ -335,7 +510,7 @@ class ColumnData {
 
 	get collate() {
 
-		this.COLLATE = 'COLLATE utf8_general_ci'
+		this.Collate = 'COLLATE utf8_general_ci'
 		return this
 	}
 
@@ -343,7 +518,7 @@ class ColumnData {
 
 	get unique() {
 
-		this.UNIQUE = 'UNIQUE'
+		this.Unique = 'UNIQUE'
 		return this
 	}
 
@@ -351,7 +526,7 @@ class ColumnData {
 
 	get null() {
 
-		this.NULL = true
+		this.Null = true
 		return this
 	}
 }
