@@ -171,17 +171,14 @@ class DataBase {
 
 
 
-	fetch(callback) {
+	async fetch(callback) {
 
 		this.QUERY = `SELECT * FROM ${ this.TABLE }`
 
-		setTimeout(async () => {
+		let result = await this.query()
 
-			let response = await this.query()
-			callback(response)
-		})
-
-		return this
+		if (callback) callback( result )
+		return result
 	}
 
 
@@ -198,7 +195,7 @@ class DataBase {
 
 
 
-	update() {
+	async update() {
 
 		if (typeof arguments[0] == 'string') {
 
@@ -213,23 +210,19 @@ class DataBase {
 
 		this.QUERY = `UPDATE ${ this.TABLE } SET ${ this.UPDATE }`
 
-		setTimeout(() => this.query())
-
-		return this
+		return await this.query()
 	}
 
 
 
-	insert(data) {
+	async insert(data) {
 
 		let keys = Object.keys(data).join(', ')
 		let values = Object.values(data).map(value => this.type(value)).join(', ')
 
 		this.QUERY = `INSERT INTO ${ this.TABLE } (${ keys }) VALUES (${ values })`
 
-		setTimeout(() => this.query())
-
-		return this
+		return await this.query()
 	}
 
 
