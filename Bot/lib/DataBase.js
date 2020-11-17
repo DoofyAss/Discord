@@ -52,7 +52,7 @@ class DataBase {
 		switch (typeof value) {
 
 			default:
-				return value
+				return value ? value : 'null'
 			break
 
 			case 'string':
@@ -155,7 +155,7 @@ class DataBase {
 
 		let result = await new Promise(result => {
 
-			// console.log(this.SQL)
+			// console.log(this.SQL) // debug
 
 			db.query(this.SQL, (err, res) => {
 

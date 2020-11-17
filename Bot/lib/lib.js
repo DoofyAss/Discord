@@ -15,21 +15,21 @@ let lib = {
 
 	date(timestamp) {
 
-		let date = new Date(parseInt(timestamp)); // php timestamp * 1000
+		let date = new Date(parseInt(timestamp)) // php timestamp * 1000
 
-		let year = date.toLocaleString('ru', { year: 'numeric' });
-		let month = date.toLocaleString('ru', { month: '2-digit' });
-		let day = date.toLocaleString('ru', { day: '2-digit' });
+		let year = date.toLocaleString('ru', { year: 'numeric' })
+		let month = date.toLocaleString('ru', { month: '2-digit' })
+		let day = date.toLocaleString('ru', { day: '2-digit' })
 
-		let hour = date.toLocaleString('ru', { hour: '2-digit' });
-		let minute = ('0' + date.toLocaleString('ru', { minute: '2-digit' })).slice(-2);
+		let hour = date.toLocaleString('ru', { hour: '2-digit' })
+		let minute = ('0' + date.toLocaleString('ru', { minute: '2-digit' })).slice(-2)
 
-		return `${day}.${month}.${year}, ${hour}:${minute}`;
+		return `${hour}:${minute}, ${day}.${month}.${year}`
 	},
 
 	timestamp(date) {
 
-		return new Date(date).getTime();
+		return new Date(date).getTime()
 	}
 }
 
@@ -52,6 +52,36 @@ Object.defineProperty(Array.prototype, 'random', {
     get: function() {
 
 		return this[ Math.floor( Math.random() * this.length ) ]
+	}
+})
+
+
+
+Object.defineProperty(Array.prototype, 'encode', {
+
+    get: function() {
+
+		return this.join(', ')
+	}
+})
+
+
+
+Object.defineProperty(String.prototype, 'decode', {
+
+    get: function() {
+
+		return this.replace(' ', '').split(',')
+	}
+})
+
+
+
+Object.defineProperty(Number.prototype, 'date', {
+
+    get: function() {
+
+		return lib.date(this)
 	}
 })
 

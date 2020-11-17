@@ -12,13 +12,14 @@ module.exports = {
 
 	channel: {
 
-		notify: null
+		notify: null,
+		chat: [null, null]
 	},
 
 
 
 	config: {
 
-		token: 'null'
+		token: null
 	}
 }
