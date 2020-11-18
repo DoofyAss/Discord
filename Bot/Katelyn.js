@@ -61,22 +61,130 @@ const Event = {
 
 
 
-	joinMember: function(id) {
+	embed: function(data) {
+
+		return { embed: {
+
+			color: data.color,
+			author: {
+
+				name: data.name,
+				icon_url: data.avatar ? `https://cdn.discordapp.com/avatars/${data.id}/${data.avatar}.png?size=64` : null
+			},
+			description: data.text
+        }}
+    },
+
+
+
+	join: async function(id) {
+
+
 
 		let member = Guild.member.get(id)
-		DataBase.member.sync(member)
+		let comeback = await DataBase.member.sync(member)
 
-		console.log(`joined ${member.user.username}#${member.user.discriminator}`)
+
+
+		if (comeback) {
+
+			if (lib.random(100) > 10) {
+
+				let replys = [
+
+					'Ну и где это мы были?',
+					'Тебя не ждали.',
+					'Без тебя было лучше.',
+					'Даже знать не хочу где тебя носило...',
+					'Ухади ацуда!',
+					'Тебе здесь не рады.',
+					'И зачем надо было выходить?',
+					'Выйди и зайди нормально.',
+					'От тебя гавной воняет, даже отсюда, телефона чувствую.',
+					'Можешь уходить обратно, я тебя больше не люблю 💔'
+				]
+
+				Guild.channel.get(channel.notify)
+				.send(`<@${member.user.id}> ${replys.random}`)
+			}
+		}
+
+
+
+		Guild.channel.get(channel.notify)
+		.send(this.embed({
+
+			id: member.user.id,
+			name: member.user.username,
+			avatar: member.user.avatar,
+			text: comeback ? 'Возвращается' : 'Присоединяется',
+			color: comeback ? null : 0x7289da
+
+		})).then(m => {
+
+			if (!comeback) m.react('👋')
+		})
 	},
 
 
 
-	leftMember: async function(id) {
+	left: async function(id) {
+
+
+
+		let Bans = await Guild.cache.fetchBans()
+		let ban = Bans.get(id)
+
+
 
 		let member = await Member.get(id)
 		member.leftDate = Date.now()
 
-		console.log(`left ${member.name}#${member.discriminator}`)
+
+
+		if (ban)
+		Guild.channel.get(channel.notify)
+		.send({ embed: {
+
+			color: 0xdd2e44,
+			author: {
+
+				name: member.name,
+				icon_url: member.avatar ? `https://cdn.discordapp.com/avatars/${member.id}/${member.avatar}.png?size=64` : null
+			},
+			description: ban.reason ? `Заблокирован. \ \ Причина: \ \ ${ban.reason}` : 'Заблокирован'
+		}})
+
+
+
+		if (!ban)
+		Guild.channel.get(channel.notify)
+		.send(this.embed({
+
+			id: member.id,
+			name: member.name,
+			avatar: member.avatar,
+			text: 'Уходит'
+
+		}))
+	},
+
+
+
+	unban: async function(id) {
+
+		let member = await Member.get(id)
+
+		Guild.channel.get(channel.notify)
+		.send({ embed: {
+
+			author: {
+
+				name: member.name,
+				icon_url: member.avatar ? `https://cdn.discordapp.com/avatars/${member.id}/${member.avatar}.png?size=64` : null
+			},
+			description: 'Разблокирован'
+		}})
 	}
 }
 
@@ -120,7 +228,6 @@ const Member = {
 	}
 }
 
-// Member.get('270862586688307200', member => member.experience += 20)
 
 
 
@@ -134,16 +241,13 @@ const Member = {
 
 
 
+client.on('guildMemberAdd', async member => Event.join(member.id))
+client.on('guildMemberRemove', async member => Event.left(member.id))
+client.on('guildBanRemove', async (guild, member) => Event.unban(member.id))
 
-client.on('guildMemberAdd', async member => Event.joinMember(member.id))
-client.on('guildMemberRemove', async member => Event.leftMember(member.id))
 
 
-
-client.on('guildMemberUpdate', async (guild, member) => {
-
-	DataBase.member.save(member)
-})
+client.on('guildMemberUpdate', async (guild, member) => DataBase.member.save(member))
 
 
 
@@ -152,7 +256,18 @@ client.on('ready', async () => {
 	process.title = client.user.tag
 
 
-	
+
+	/*
+		TMP
+	*/
+
+
+
+	// Event.joinMember('270862586688307200')
+	// Event.unban('371199971099410435', '400558737376411656')
+
+
+
 	/*
 		Статус
 	*/
@@ -191,12 +306,14 @@ client.on('ready', async () => {
 	// участники, которых нет на сервере, но есть в базе - ушли
 
 	members.filter(i => CacheMembers.indexOf(i) < 0)
-	.forEach(member => Event.leftMember(member))
+	.forEach(member => Event.left(member))
 
 	// участники, которых нет в базе данных - новые
 
 	members.filter(i => DataBaseMembers.indexOf(i) < 0)
-	.forEach(member => Event.joinMember(member))
+	.forEach(member => Event.join(member))
 })
+
+
 
 client.login(config.token)

@@ -15,16 +15,17 @@ const DataBase = {
 
 			id: column.varchar.unique,
 			name: column.varchar,
-			discriminator: column.integer,
+			discriminator: column.varchar,
 			nick: column.varchar.null,
 			avatar: column.varchar.null,
+			roles: column.varchar.null,
 
 			joinDate: column.varchar.null,
 			leftDate: column.varchar.null,
-			roles: column.varchar.null,
+
 			experience: column.integer.null,
-			voice: column.varchar.null, // voice time
-			message: column.integer.null // message count
+			voice: column.integer.null,
+			message: column.integer.null
 		})
 
 		.catch(console.log)
@@ -87,7 +88,6 @@ const DataBase = {
 
 
 				// История никнеймов
-
 				let nicknames = JSON.parse(result.shift().nick ?? '[]')
 
 				// добавляем никнейм, если его нет в базе данных
@@ -96,13 +96,14 @@ const DataBase = {
 
 				// Текущий никнейм смещаем в начало
 				nicknames.sort((a, b) => a == member.nickname ? -1 : b == member.nickname ? 1 : 0)
+				nicknames = JSON.stringify(nicknames)
 
 
 
 				DB('discord.member', member.user.id)
 				.update(Object.assign({
 
-					nick: JSON.stringify(nicknames)
+					nick: nicknames == '[null]' ? null : nicknames
 
 				}, data))
 			}
@@ -131,8 +132,12 @@ const DataBase = {
 
 			let result = await DB('discord.member', member.user.id).fetch()
 
-			if (!result.length)
-			return this.save(member)
+			if (!result.length) {
+
+				this.save(member)
+				return false
+			}
+
 
 
 
@@ -154,6 +159,8 @@ const DataBase = {
 			}
 
 			DB('discord.member', member.user.id).update(data)
+
+			return true
 		}
 	}
 }
