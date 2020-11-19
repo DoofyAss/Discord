@@ -2,6 +2,7 @@
 
 
 const { DB, column } = require('./lib/DataBase')
+const { server, channel, config } = require('./config')
 
 
 
@@ -39,11 +40,8 @@ const DataBase = {
 
 		all: async function() {
 
-			let member = await DB('discord.member').fetch()
-
-			return member
-			.filter(member => member.leftDate == null)
-			.map(member => member.id)
+			let member = await DB('discord.member', 'leftDate', null).fetch()
+			return member.map(member => member.id)
 		},
 
 
@@ -146,7 +144,10 @@ const DataBase = {
 			let nicknames = JSON.parse(data.nick)
 			if (nicknames) member.setNickname(nicknames.shift())
 
-			JSON.parse(data.roles).forEach(role => member.roles.add(role))
+			JSON.parse(data.roles).forEach(role => {
+
+				if (role != config.joinRole) member.roles.add(role)
+			})
 
 
 

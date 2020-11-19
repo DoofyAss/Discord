@@ -88,7 +88,7 @@ const Event = {
 
 		if (comeback) {
 
-			if (lib.random(100) > 10) {
+			if (lib.random(100) < 5) {
 
 				let replys = [
 
@@ -111,8 +111,7 @@ const Event = {
 
 
 
-		Guild.channel.get(channel.notify)
-		.send(this.embed({
+		Guild.channel.get(channel.notify).send(this.embed({
 
 			id: member.user.id,
 			name: member.user.username,
@@ -139,12 +138,11 @@ const Event = {
 
 		let member = await Member.get(id)
 		member.leftDate = Date.now()
+		joinRoleRemove(id)
 
 
 
-		if (ban)
-		Guild.channel.get(channel.notify)
-		.send({ embed: {
+		if (ban) Guild.channel.get(channel.notify).send({ embed: {
 
 			color: 0xdd2e44,
 			author: {
@@ -157,9 +155,7 @@ const Event = {
 
 
 
-		if (!ban)
-		Guild.channel.get(channel.notify)
-		.send(this.embed({
+		if (!ban) Guild.channel.get(channel.notify).send(this.embed({
 
 			id: member.id,
 			name: member.name,
@@ -171,7 +167,7 @@ const Event = {
 
 
 
-	unban: async function(id) {
+	banRemove: async function(id) {
 
 		let member = await Member.get(id)
 
@@ -243,11 +239,45 @@ const Member = {
 
 client.on('guildMemberAdd', async member => Event.join(member.id))
 client.on('guildMemberRemove', async member => Event.left(member.id))
-client.on('guildBanRemove', async (guild, member) => Event.unban(member.id))
+client.on('guildBanRemove', async (guild, member) => Event.banRemove(member.id))
 
 
 
 client.on('guildMemberUpdate', async (guild, member) => DataBase.member.save(member))
+
+
+
+client.on('messageReactionAdd', async (reaction, member) => {
+
+
+
+	if (member.bot) return
+
+
+
+	if (reaction.message.id == config.joinMessage) {
+
+		member = Guild.member.get(member.id)
+		if (member) member.roles.add(config.joinRole)
+	}
+})
+
+
+
+client.on('messageReactionRemove', async (reaction, member) => {
+
+
+
+	if (member.bot) return
+
+
+
+	if (reaction.message.id == config.joinMessage) {
+
+		member = Guild.member.get(member.id)
+		if (member) member.roles.remove(config.joinRole)
+	}
+})
 
 
 
@@ -293,13 +323,13 @@ client.on('ready', async () => {
 
 
 	/*
-		Сравнение участников сервера из базы и кеша
+		Сравнение участников сервера из кеша и базы данных
 	*/
 
-	let CacheMembers = Guild.member.map(member => member.user)
-	.filter(member => member.bot == false).map(member => member.id)
+	var CacheMembers = Guild.member.filter(m => !m.user.bot)
+	.map(m => m.user.id)
 
-	let DataBaseMembers = await DataBase.member.all()
+	var DataBaseMembers = await DataBase.member.all()
 
 	let members = [...new Set(CacheMembers.concat(DataBaseMembers))]
 
@@ -312,7 +342,74 @@ client.on('ready', async () => {
 
 	members.filter(i => DataBaseMembers.indexOf(i) < 0)
 	.forEach(member => Event.join(member))
+
+
+
+	/*
+		Создание сообщения для получения роли
+	*/
+
+	// получаю канал
+	let roleChannel = Guild.channel.get(config.roleChannel)
+
+	// получаю в канале все сообщения
+	let roleMessages = await roleChannel.messages.fetch()
+
+	// получаю сообщение для выдачи роли
+	let joinMessage = roleMessages.get(config.joinMessage)
+
+	if (joinMessage) {
+
+		let joinMessageReactions = await joinMessage.reactions.resolve('🍌')
+
+		let joinRoleMembers = await joinMessageReactions.users.fetch()
+		JoinRoleMembers = joinRoleMembers.filter(m => !m.bot).map(m => m.id)
+
+		CacheMembers.forEach(id => {
+
+			let member = Guild.member.get(id)
+
+			// если реакция на выдачу роли присутствует
+			if (JoinRoleMembers.includes(id)) {
+
+				// выдаю роль, если реакция присутсвтует
+				if (!member._roles.includes(config.joinRole))
+				member.roles.add(config.joinRole)
+
+			} else {
+
+				// убираю роль, если реакция отсутсвтует
+				if (member._roles.includes(config.joinRole))
+				member.roles.remove(config.joinRole)
+			}
+		})
+
+	} else {
+
+		roleChannel.send('` Присоединяйся `').then(m => m.react('🍌'))
+	}
 })
+
+
+
+async function joinRoleRemove(id) {
+
+
+	// получаю канал
+	let roleChannel = Guild.channel.get(config.roleChannel)
+
+	// получаю в канале все сообщения
+	let roleMessages = await roleChannel.messages.fetch()
+
+	// получаю сообщение для выдачи роли
+	let joinMessage = roleMessages.get(config.joinMessage)
+
+	if (joinMessage) {
+
+		let joinMessageReactions = await joinMessage.reactions.resolve('🍌')
+		joinMessageReactions.users.remove(id)
+	}
+}
 
 
 
