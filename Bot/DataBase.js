@@ -25,8 +25,8 @@ const DataBase = {
 			leftDate: column.varchar.null,
 
 			experience: column.integer.null,
-			voice: column.integer.null,
-			message: column.integer.null
+			message: column.integer.null,
+			voice: column.integer.null
 		})
 
 		.catch(console.log)

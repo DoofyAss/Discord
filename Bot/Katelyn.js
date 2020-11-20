@@ -45,6 +45,17 @@ const Guild = {
 	get channel() {
 
 		return this.cache.channels.cache
+	},
+
+
+
+	get online() {
+
+		return (async () => {
+
+			let members = await this.cache.members.fetch()
+			return members.map(m => m.guild.presences.cache).shift()
+        })()
 	}
 }
 
@@ -241,9 +252,14 @@ client.on('guildMemberAdd', async member => Event.join(member.id))
 client.on('guildMemberRemove', async member => Event.left(member.id))
 client.on('guildBanRemove', async (guild, member) => Event.banRemove(member.id))
 
-
-
 client.on('guildMemberUpdate', async (guild, member) => DataBase.member.save(member))
+
+
+
+
+
+
+
 
 
 
@@ -281,6 +297,79 @@ client.on('messageReactionRemove', async (reaction, member) => {
 
 
 
+
+
+
+
+
+
+
+client.on('messageDelete', async message => {
+
+
+
+	// let logs = await message.guild.fetchAuditLogs({ type: 72 })
+
+	try {
+
+		let count = message.content.split(' ').length
+
+		let member = await Member.get(message.author.id)
+		if (member.message > 0) member.message -= 1
+		if (member.experience > count - 1) member.experience -= count
+
+	} catch(e) { }
+})
+
+
+
+client.on('message', async message => {
+
+
+
+	if (message.author.bot) return
+
+
+
+	/*
+		Текстовой канал
+	*/
+
+	if (message.channel.type == 'text') {
+
+
+
+		try {
+
+			let count = message.content.split(' ').length
+
+			let member = await Member.get(message.author.id)
+			member.message += 1
+			member.experience += count
+
+		} catch(e) { }
+	}
+
+
+
+	/*
+		Приватные сообщения
+	*/
+
+	if (message.channel.type == 'dm') {
+
+	}
+})
+
+
+
+
+
+
+
+
+
+
 client.on('ready', async () => {
 
 	process.title = client.user.tag
@@ -304,21 +393,29 @@ client.on('ready', async () => {
 
 	setInterval(function status() {
 
-		let countMembers = Guild.bot.guild.memberCount - 1
-		let onlineMembers = Guild.bot.guild.presences.cache.size - 1
+		(async () => {
 
-		client.user.setPresence({
+			let Online = await Guild.online
+			let count = Guild.bot.guild.memberCount - 1
 
-			activity: {
+			let online = Online.filter(m => m.status == 'online')
+			// let idle = Online.filter(m => m.status == 'idle')
+			// let dnd = Online.filter(m => m.status == 'dnd')
 
-				type: 'WATCHING',
-				name: `  Online ${onlineMembers}    ( ${countMembers} )`
-			}
-		})
+			client.user.setPresence({
+
+				activity: {
+
+					type: 'WATCHING',
+					name: `   Online ${online.size - 1}      ( ${count} )`
+				}
+			})
+
+        })()
 
 		return status
 
-	}(), 180000)
+	}(), 300000)
 
 
 
