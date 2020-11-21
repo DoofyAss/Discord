@@ -1,3 +1,3 @@
 @echo off
-node Test\test.parse.js
+node Test\test.date.js
 pause

@@ -20,6 +20,11 @@ module.exports = {
 
 	config: {
 
-		token: null
+		token: null,
+
+		roleChannel: null,
+		joinMessage: null,
+		roleJoin: null,
+		rolePrison: null
 	}
 }

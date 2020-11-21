@@ -3,6 +3,7 @@
 
 const { lib } = require('./lib/lib.js')
 const { DataBase, DB } = require('./DataBase')
+const { Command } = require('./Command')
 const { server, channel, config } = require('./config')
 
 const { Client } = require('discord.js')
@@ -92,48 +93,102 @@ const Event = {
 
 
 
-		let member = Guild.member.get(id)
-		let comeback = await DataBase.member.sync(member)
+		let notify = Guild.channel.get(channel.notify)
+		let _member = await Guild.member.get(id)
+		let member = await Member.get(id)
 
 
 
-		if (comeback) {
+		// вернувшийся участник
 
-			if (lib.random(100) < 5) {
+		if (member) {
 
-				let replys = [
 
-					'Ну и где это мы были?',
-					'Тебя не ждали.',
-					'Без тебя было лучше.',
-					'Даже знать не хочу где тебя носило...',
-					'Ухади ацуда!',
-					'Тебе здесь не рады.',
-					'И зачем надо было выходить?',
-					'Выйди и зайди нормально.',
-					'От тебя гавной воняет, даже отсюда, телефона чувствую.',
-					'Можешь уходить обратно, я тебя больше не люблю 💔'
-				]
 
-				Guild.channel.get(channel.notify)
-				.send(`<@${member.user.id}> ${replys.random}`)
+			// если участник заблокирован
+
+			if (member.ban) {
+
+				// если прошло больше суток с момента ухода
+
+				if (parseInt(member.leftDate) + 86400000 < Date.now()) {
+
+					let replys = [
+						'Ухади ацуда!',
+						'Тебя не ждали.',
+						'Тебе здесь не рады.',
+						'Без тебя было лучше.',
+						'От тебя гавной воняет, даже отсюда, телефона чувствую.',
+					]
+
+					notify.send(`<@${id}> ${replys.random}`)
+				}
 			}
+
+
+
+			// если участник не заблокирован
+
+			if (!member.ban) {
+
+				// если прошло больше суток с момента ухода
+
+				if (parseInt(member.leftDate) + 86400000 < Date.now()) {
+
+					let replys = [
+						'Ну и где это мы были?',
+						'Выйди и зайди нормально.',
+						'И зачем надо было выходить?',
+						'Даже знать не хочу где тебя носило...',
+						'Можешь уходить обратно, я тебя больше не люблю 💔'
+					]
+
+					notify.send(`<@${id}> ${replys.random}`)
+				}
+			}
+
+
+
+			notify.send({ embed: {
+
+				color: !member.ban ? null : 0xf87845,
+				description: 'Возвращается',
+				author: {
+
+					name: _member.user.username,
+					icon_url: _member.user.avatar ? `https://cdn.discordapp.com/avatars/${_member.user.id}/${_member.user.avatar}.png?size=64` : null
+				},
+				footer: !member.ban ? null : {
+
+					text: member.reason ? `Заблокирован. \ \ Причина: \ \ ${member.reason}` : 'Заблокирован'
+				}
+	        }})
 		}
 
 
 
-		Guild.channel.get(channel.notify).send(this.embed({
+		// новый участник
 
-			id: member.user.id,
-			name: member.user.username,
-			avatar: member.user.avatar,
-			text: comeback ? 'Возвращается' : 'Присоединяется',
-			color: comeback ? null : 0x7289da
+		if (!member) {
 
-		})).then(m => {
 
-			if (!comeback) m.react('👋')
-		})
+
+			notify.send({ embed: {
+
+				color: 0x7289da,
+				description: 'Присоединяется',
+				author: {
+
+					name: _member.user.username,
+					icon_url: _member.user.avatar ? `https://cdn.discordapp.com/avatars/${_member.user.id}/${_member.user.avatar}.png?size=64` : null
+				}
+
+	        }}).then(m => m.react('👋'))
+		}
+
+
+
+		DataBase.member.sync(_member)
 	},
 
 
@@ -252,7 +307,15 @@ client.on('guildMemberAdd', async member => Event.join(member.id))
 client.on('guildMemberRemove', async member => Event.left(member.id))
 client.on('guildBanRemove', async (guild, member) => Event.banRemove(member.id))
 
-client.on('guildMemberUpdate', async (guild, member) => DataBase.member.save(member))
+client.on('guildMemberUpdate', async (guild, member) => {
+
+	if (member._roles.includes(config.rolePrison)) {
+
+		joinRoleRemove(member.user.id)
+	}
+
+	DataBase.member.save(member)
+})
 
 
 
@@ -274,7 +337,7 @@ client.on('messageReactionAdd', async (reaction, member) => {
 	if (reaction.message.id == config.joinMessage) {
 
 		member = Guild.member.get(member.id)
-		if (member) member.roles.add(config.joinRole)
+		if (member) member.roles.add(config.roleJoin)
 	}
 })
 
@@ -291,7 +354,7 @@ client.on('messageReactionRemove', async (reaction, member) => {
 	if (reaction.message.id == config.joinMessage) {
 
 		member = Guild.member.get(member.id)
-		if (member) member.roles.remove(config.joinRole)
+		if (member) member.roles.remove(config.roleJoin)
 	}
 })
 
@@ -339,6 +402,10 @@ client.on('message', async message => {
 
 
 
+		// console.log(message.content)
+
+
+
 		try {
 
 			let count = message.content.split(' ').length
@@ -382,8 +449,10 @@ client.on('ready', async () => {
 
 
 
-	// Event.joinMember('270862586688307200')
-	// Event.unban('371199971099410435', '400558737376411656')
+
+
+
+
 
 
 
@@ -419,6 +488,13 @@ client.on('ready', async () => {
 
 
 
+
+
+
+
+
+
+
 	/*
 		Сравнение участников сервера из кеша и базы данных
 	*/
@@ -439,6 +515,13 @@ client.on('ready', async () => {
 
 	members.filter(i => DataBaseMembers.indexOf(i) < 0)
 	.forEach(member => Event.join(member))
+
+
+
+
+
+
+
 
 
 
@@ -469,15 +552,32 @@ client.on('ready', async () => {
 			// если реакция на выдачу роли присутствует
 			if (JoinRoleMembers.includes(id)) {
 
-				// выдаю роль, если реакция присутсвтует
-				if (!member._roles.includes(config.joinRole))
-				member.roles.add(config.joinRole)
+				// проверка на блокировку
+				if (!member._roles.includes(config.rolePrison)) {
+
+					// выдаю роль, если реакция присутсвтует
+					if (!member._roles.includes(config.roleJoin))
+					member.roles.add(config.roleJoin)
+
+				} else {
+
+					/*
+						если реакция на выдачу роли присутствует,
+						но участник заблокирован
+
+						удаляем реакцию заблокированного участника
+					*/
+
+					joinRoleRemove(id)
+				}
+
+
 
 			} else {
 
 				// убираю роль, если реакция отсутсвтует
-				if (member._roles.includes(config.joinRole))
-				member.roles.remove(config.joinRole)
+				if (member._roles.includes(config.roleJoin))
+				member.roles.remove(config.roleJoin)
 			}
 		})
 
@@ -486,6 +586,13 @@ client.on('ready', async () => {
 		roleChannel.send('` Присоединяйся `').then(m => m.react('🍌'))
 	}
 })
+
+
+
+
+
+
+
 
 
 
@@ -505,6 +612,61 @@ async function joinRoleRemove(id) {
 
 		let joinMessageReactions = await joinMessage.reactions.resolve('🍌')
 		joinMessageReactions.users.remove(id)
+	}
+}
+
+
+
+async function Prison(by, id, reason) {
+
+
+
+	let member = await Guild.member.get(id)
+	let _member = await Member.get(id)
+
+	_member.ban = by
+	_member.reason = reason
+
+	// если участник на сервере - убрать все роли
+
+	if (member) {
+
+		member.roles.add(config.rolePrison)
+
+		let roles = member._roles
+		let index = roles.indexOf(config.rolePrison)
+		roles.splice(index, 1)
+
+		roles.forEach(role => member.roles.remove(role))
+	}
+}
+
+
+
+async function UnPrison(by, id) {
+
+
+
+	let member = await Guild.member.get(id)
+	let _member = await Member.get(id)
+
+	_member.ban = null
+	_member.reason = null
+
+	// если участник на сервере - вернуть все роли
+
+	if (member) {
+
+		member.roles.remove(config.rolePrison)
+
+		let roles = JSON.parse(_member.roles)
+		if (roles) {
+
+			let index = roles.indexOf(config.roleJoin)
+			roles.splice(index, 1)
+
+			roles.forEach(role => member.roles.add(role))
+		}
 	}
 }
 

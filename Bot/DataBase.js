@@ -26,7 +26,10 @@ const DataBase = {
 
 			experience: column.integer.null,
 			message: column.integer.null,
-			voice: column.integer.null
+			voice: column.integer.null,
+
+			ban: column.varchar.null, // id member or true
+			reason: column.varchar.null
 		})
 
 		.catch(console.log)
@@ -67,14 +70,12 @@ const DataBase = {
 
 
 
-			let data = {
+			let memberData = {
 
 				id: member.user.id,
 				name: member.user.username,
 				discriminator: member.user.discriminator,
-				avatar: member.user.avatar,
-
-				roles: JSON.stringify(member._roles)
+				avatar: member.user.avatar
 			}
 
 
@@ -83,10 +84,12 @@ const DataBase = {
 
 			if (result.length) {
 
+				let data = result.shift()
+
 
 
 				// История никнеймов
-				let nicknames = JSON.parse(result.shift().nick ?? '[]')
+				let nicknames = JSON.parse(data.nick ?? '[]')
 
 				// добавляем никнейм, если его нет в базе данных
 				if (!nicknames.includes(member.nickname))
@@ -97,13 +100,23 @@ const DataBase = {
 				nicknames = JSON.stringify(nicknames)
 
 
+				if (!data.ban) {
+
+					memberData = Object.assign({
+
+						roles: JSON.stringify(member._roles)
+
+					}, memberData)
+				}
+
+
 
 				DB('discord.member', member.user.id)
 				.update(Object.assign({
 
 					nick: nicknames == '[null]' ? null : nicknames
 
-				}, data))
+				}, memberData))
 			}
 
 
@@ -118,9 +131,10 @@ const DataBase = {
 				.insert(Object.assign({
 
 					joinDate: member.joinedTimestamp,
+					roles: JSON.stringify(member._roles),
 					nick: member.nickname ? JSON.stringify([member.nickname]) : null
 
-				}, data))
+				}, memberData))
 			}
 		},
 
@@ -130,38 +144,52 @@ const DataBase = {
 
 			let result = await DB('discord.member', member.user.id).fetch()
 
-			if (!result.length) {
-
-				this.save(member)
-				return false
-			}
+			// если данных нет - новый участник
+			if (!result.length)
+			return this.save(member)
 
 
 
+			try {
 
-			let data = result.shift()
+				let data = result.shift()
 
-			let nicknames = JSON.parse(data.nick)
-			if (nicknames) member.setNickname(nicknames.shift())
-
-			JSON.parse(data.roles).forEach(role => {
-
-				if (role != config.joinRole) member.roles.add(role)
-			})
+				// получаю историю никнеймов
+				let nicknames = JSON.parse(data.nick)
+				// возвращаю последний никнейм
+				if (nicknames) member.setNickname(nicknames.shift())
 
 
 
-			data = {
+				// получаю сохранённые роли
+				let roles = JSON.parse(data.roles)
+				if (!data.ban) {
 
-				name: member.user.username,
-				discriminator: member.user.discriminator,
-				avatar: member.user.avatar,
-				leftDate: null
-			}
+					let index = roles.indexOf(config.roleJoin)
+					if (index > -1) roles.splice(index, 1)
 
-			DB('discord.member', member.user.id).update(data)
+					// возвращаю все роли, кроме главной
+					roles.forEach(role => member.roles.add(role))
 
-			return true
+				} else {
+
+					// если участник заблокирован
+					member.roles.add(config.rolePrison)
+				}
+
+
+
+				data = {
+
+					name: member.user.username,
+					discriminator: member.user.discriminator,
+					avatar: member.user.avatar,
+					leftDate: null
+				}
+
+				DB('discord.member', member.user.id).update(data)
+
+			} catch(e) { }
 		}
 	}
 }
