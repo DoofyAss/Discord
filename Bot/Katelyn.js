@@ -3,7 +3,6 @@
 
 const { lib } = require('./lib/lib.js')
 const { DataBase, DB } = require('./DataBase')
-const { Command } = require('./Command')
 const { server, channel, config } = require('./config')
 
 const { Client } = require('discord.js')
@@ -86,6 +85,13 @@ const Event = {
 			description: data.text
         }}
     },
+
+
+
+
+
+
+
 
 
 
@@ -193,6 +199,13 @@ const Event = {
 
 
 
+
+
+
+
+
+
+
 	left: async function(id) {
 
 
@@ -233,6 +246,13 @@ const Event = {
 
 
 
+
+
+
+
+
+
+
 	banRemove: async function(id) {
 
 		let member = await Member.get(id)
@@ -246,6 +266,50 @@ const Event = {
 				icon_url: member.avatar ? `https://cdn.discordapp.com/avatars/${member.id}/${member.avatar}.png?size=64` : null
 			},
 			description: 'Разблокирован'
+		}})
+	},
+
+
+
+
+
+
+
+
+
+
+	Jail: async function(author, member, reason) {
+
+		Guild.channel.get(channel.notify)
+		.send({ embed: {
+
+			color: 0xf87845,
+			description: 'Заблокирован',
+			author: {
+
+				name: member.name,
+				icon_url: member.avatar ? `https://cdn.discordapp.com/avatars/${member.id}/${member.avatar}.png?size=64` : null
+			},
+			footer: {
+
+				text: reason ? `Причина: \ \ ${reason}` : null
+			}
+		}})
+	},
+
+
+
+	unJail: async function(author, member) {
+
+		Guild.channel.get(channel.notify)
+		.send({ embed: {
+
+			description: 'Разблокирован',
+			author: {
+
+				name: member.name,
+				icon_url: member.avatar ? `https://cdn.discordapp.com/avatars/${member.id}/${member.avatar}.png?size=64` : null
+			}
 		}})
 	}
 }
@@ -402,7 +466,8 @@ client.on('message', async message => {
 
 
 
-		// console.log(message.content)
+		Reply(message)
+		// if (Replys(message)) return
 
 
 
@@ -446,7 +511,6 @@ client.on('ready', async () => {
 	/*
 		TMP
 	*/
-
 
 
 
@@ -617,14 +681,105 @@ async function joinRoleRemove(id) {
 
 
 
-async function Prison(by, id, reason) {
+
+
+
+
+
+
+
+/*
+	Commands
+*/
+
+
+
+const Reply = function(message) {
+
+
+
+	let prefix = [ `<@!${client.user.id}>`, '<@&778153662798364673>' ]
+
+	prefix.forEach(prefix => {
+
+		if (message.content.startsWith(prefix)) {
+
+			let args = message.content.slice(prefix.length).trim().split(' ')
+
+			// Находим любые цифры
+			let id = args.map(a => a.split(/\D/g).join('')).filter(n => n != '').shift()
+
+			// Находим эти цифры без форматирования
+			let arg = args.filter(a => a.match(id)).shift()
+
+			// Находим позицию цифр
+			let index = args.indexOf(arg)
+
+			// собираем после цифр аргументы ( это текст причины )
+			let reason = args.splice(index + 1, args.length).join(' ')
+
+			// аргументы команды
+			let commands = args.splice(args.length - index - 1, args.length - 1)
+
+
+			let fuckyou = [
+
+				'А чё ты ещё хочешь?',
+				'А нахуй бы тебе не пойти?',
+				'А хуй тебе',
+				'Да чёт мне лень',
+				'У тебя ещё банилка не выросла',
+				'Любой каприз за ваш сасай',
+				'Баны отключены за неуплату',
+				'Ты кто блять?'
+			]
+
+
+			let notexist = [
+
+				'Не могу найти такого участника',
+				'Такого участника нет',
+				'Я тупенькая и найти такого участника не могу',
+				'Не знаю кто это',
+				'А это кто?'
+			]
+
+
+			commands.forEach(command => {
+
+				if (['бан', 'бань', 'забань', 'заблокируй', 'забанить', 'блок']
+				.includes(command.toLowerCase())) {
+
+					message.member.hasPermission('KICK_MEMBERS') ?
+					Jail(message, id, reason, notexist) : message.reply(fuckyou.random)
+				}
+
+				if (['разбан', 'разбань', 'разбанить', 'разблокировать', 'разблокируй']
+				.includes(command.toLowerCase())) {
+
+					message.member.hasPermission('KICK_MEMBERS') ?
+					unJail(message, id, notexist) : message.reply(fuckyou.random)
+				}
+			})
+		}
+	})
+}
+
+
+
+async function Jail(message, id, reason, notexist) {
 
 
 
 	let member = await Guild.member.get(id)
 	let _member = await Member.get(id)
 
-	_member.ban = by
+	if (!_member)
+	return message.reply(notexist.random)
+
+	Event.Jail(message.author, _member, reason)
+
+	_member.ban = message.author.id
 	_member.reason = reason
 
 	// если участник на сервере - убрать все роли
@@ -643,12 +798,17 @@ async function Prison(by, id, reason) {
 
 
 
-async function UnPrison(by, id) {
+async function unJail(message, id, notexist) {
 
 
 
 	let member = await Guild.member.get(id)
 	let _member = await Member.get(id)
+
+	if (!_member)
+	return message.reply(notexist.random)
+
+	Event.unJail(message.author, _member)
 
 	_member.ban = null
 	_member.reason = null
