@@ -5,6 +5,8 @@ const { lib } = require('./lib/lib.js')
 const { DataBase, DB } = require('./DataBase')
 const { server, channel, config } = require('./config')
 
+const ytdl = require('ytdl-core')
+
 const { Client } = require('discord.js')
 const client = new Client({ partials: ['MESSAGE', 'CHANNEL', 'REACTION'] });
 
@@ -367,11 +369,30 @@ const Member = {
 
 
 
-client.on('guildMemberAdd', async member => Event.join(member.id))
-client.on('guildMemberRemove', async member => Event.left(member.id))
-client.on('guildBanRemove', async (guild, member) => Event.banRemove(member.id))
+client.on('guildMemberAdd', async member => {
+
+	if (member.bot) return
+
+	Event.join(member.id)
+})
+
+client.on('guildMemberRemove', async member => {
+
+	if (member.bot) return
+
+	Event.left(member.id)
+})
+
+client.on('guildBanRemove', async (guild, member) => {
+
+	if (member.bot) return
+
+	Event.banRemove(member.id)
+})
 
 client.on('guildMemberUpdate', async (guild, member) => {
+
+	if (member.bot) return
 
 	if (member._roles.includes(config.rolePrison)) {
 
@@ -700,6 +721,8 @@ const Reply = function(message) {
 
 	let prefix = [ `<@!${client.user.id}>`, '<@&778153662798364673>' ]
 
+
+
 	prefix.forEach(prefix => {
 
 		if (message.content.startsWith(prefix)) {
@@ -747,12 +770,16 @@ const Reply = function(message) {
 
 			commands.forEach(command => {
 
+
+
 				if (['бан', 'бань', 'забань', 'заблокируй', 'забанить', 'блок']
 				.includes(command.toLowerCase())) {
 
 					message.member.hasPermission('KICK_MEMBERS') ?
 					Jail(message, id, reason, notexist) : message.reply(fuckyou.random)
 				}
+
+
 
 				if (['разбан', 'разбань', 'разбанить', 'разблокировать', 'разблокируй']
 				.includes(command.toLowerCase())) {
@@ -761,6 +788,44 @@ const Reply = function(message) {
 					unJail(message, id, notexist) : message.reply(fuckyou.random)
 				}
 			})
+		}
+
+
+
+		if (message.content.startsWith(prefix)) {
+
+			let argss = message.content.slice(prefix.length).trim().split(' ')
+			let command = argss.shift().toLowerCase()
+
+
+
+			if (command == 'запускай') {
+
+				if (message.member.user.id != '270862586688307200') return
+
+				if (message.member.voice.channel) {
+
+					(async () => {
+
+						let connection = await message.member.voice.channel.join()
+						const dispatcher = connection.play(ytdl(argss.shift(), { filter: 'audioonly' }))
+						dispatcher.setVolume(0.1)
+			        })()
+				}
+			}
+
+			if (command == 'зайди') {
+
+				if (message.member.user.id != '270862586688307200') return
+
+				if (message.member.voice.channel)
+				message.member.voice.channel.join()
+			}
+
+			if (command == 'уйди') {
+
+				Guild.bot.voice.channel.leave()
+			}
 		}
 	})
 }
