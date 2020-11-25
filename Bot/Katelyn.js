@@ -72,29 +72,6 @@ const Event = {
 
 
 
-	embed: function(data) {
-
-		return { embed: {
-
-			color: data.color,
-			author: {
-
-				name: data.name,
-				icon_url: data.avatar ? `https://cdn.discordapp.com/avatars/${data.id}/${data.avatar}.png?size=64` : null
-			},
-			description: data.text
-        }}
-    },
-
-
-
-
-
-
-
-
-
-
 	join: async function(id) {
 
 
@@ -120,6 +97,7 @@ const Event = {
 				if (parseInt(member.leftDate) + 86400000 < Date.now()) {
 
 					let replys = [
+
 						'Ухади ацуда!',
 						'Тебя не ждали.',
 						'Тебе здесь не рады.',
@@ -142,6 +120,7 @@ const Event = {
 				if (parseInt(member.leftDate) + 86400000 < Date.now()) {
 
 					let replys = [
+
 						'Ну и где это мы были?',
 						'Выйди и зайди нормально.',
 						'И зачем надо было выходить?',
@@ -217,31 +196,51 @@ const Event = {
 
 		let member = await Member.get(id)
 		member.leftDate = Date.now()
+
+
+
+		// Участник заблокирован
+
+		if (ban) {
+
+			Guild.channel.get(channel.notify)
+			.send({ embed: {
+
+				color: 0xdd2e44,
+				description: 'Заблокирован',
+				author: {
+
+					name: member.name,
+					icon_url: member.avatar ? `https://cdn.discordapp.com/avatars/${member.id}/${member.avatar}.png?size=64` : null
+				},
+				footer: {
+
+					text: ban.reason ? `Причина: \ \ ${ban.reason}` : null
+				}
+			}})
+		}
+
+
+
+		// Участник ушёл
+
+		if (!ban) {
+
+			Guild.channel.get(channel.notify)
+			.send({ embed: {
+
+				description: 'Уходит',
+				author: {
+
+					name: member.name,
+					icon_url: member.avatar ? `https://cdn.discordapp.com/avatars/${member.id}/${member.avatar}.png?size=64` : null
+				}
+			}})
+		}
+
+
+
 		joinRoleRemove(id)
-
-
-
-		if (ban) Guild.channel.get(channel.notify).send({ embed: {
-
-			color: 0xdd2e44,
-			author: {
-
-				name: member.name,
-				icon_url: member.avatar ? `https://cdn.discordapp.com/avatars/${member.id}/${member.avatar}.png?size=64` : null
-			},
-			description: ban.reason ? `Заблокирован. \ \ Причина: \ \ ${ban.reason}` : 'Заблокирован'
-		}})
-
-
-
-		if (!ban) Guild.channel.get(channel.notify).send(this.embed({
-
-			id: member.id,
-			name: member.name,
-			avatar: member.avatar,
-			text: 'Уходит'
-
-		}))
 	},
 
 
@@ -367,11 +366,36 @@ const Member = {
 
 
 
-client.on('guildMemberAdd', async member => Event.join(member.id))
-client.on('guildMemberRemove', async member => Event.left(member.id))
-client.on('guildBanRemove', async (guild, member) => Event.banRemove(member.id))
+client.on('guildMemberAdd', async member => {
+
+	if (member.bot) return
+
+	Event.join(member.id)
+})
+
+
+
+client.on('guildMemberRemove', async member => {
+
+	if (member.bot) return
+
+	Event.left(member.id)
+})
+
+
+
+client.on('guildBanRemove', async (guild, member) => {
+
+	if (member.bot) return
+
+	Event.banRemove(member.id)
+})
+
+
 
 client.on('guildMemberUpdate', async (guild, member) => {
+
+	if (member.bot) return
 
 	if (member._roles.includes(config.rolePrison)) {
 
@@ -467,7 +491,6 @@ client.on('message', async message => {
 
 
 		Reply(message)
-		// if (Replys(message)) return
 
 
 
@@ -700,6 +723,8 @@ const Reply = function(message) {
 
 	let prefix = [ `<@!${client.user.id}>`, '<@&778153662798364673>' ]
 
+
+
 	prefix.forEach(prefix => {
 
 		if (message.content.startsWith(prefix)) {
@@ -732,7 +757,8 @@ const Reply = function(message) {
 				'Любой каприз за ваш сасай',
 				'Баны отключены за неуплату',
 				'Ты кто блять?'
-			]
+
+			].random
 
 
 			let notexist = [
@@ -742,23 +768,28 @@ const Reply = function(message) {
 				'Я тупенькая и найти такого участника не могу',
 				'Не знаю кто это',
 				'А это кто?'
-			]
+
+			].random
 
 
 			commands.forEach(command => {
 
-				if (['бан', 'бань', 'забань', 'заблокируй', 'забанить', 'блок']
+
+
+				if (['бан', 'бань', 'забань', 'заблокировать', 'заблокируй', 'забанить', 'блок']
 				.includes(command.toLowerCase())) {
 
 					message.member.hasPermission('KICK_MEMBERS') ?
-					Jail(message, id, reason, notexist) : message.reply(fuckyou.random)
+					Jail(message, id, reason, notexist) : message.reply(fuckyou)
 				}
+
+
 
 				if (['разбан', 'разбань', 'разбанить', 'разблокировать', 'разблокируй']
 				.includes(command.toLowerCase())) {
 
 					message.member.hasPermission('KICK_MEMBERS') ?
-					unJail(message, id, notexist) : message.reply(fuckyou.random)
+					unJail(message, id, notexist) : message.reply(fuckyou)
 				}
 			})
 		}
@@ -775,7 +806,7 @@ async function Jail(message, id, reason, notexist) {
 	let _member = await Member.get(id)
 
 	if (!_member)
-	return message.reply(notexist.random)
+	return message.reply(notexist)
 
 	Event.Jail(message.author, _member, reason)
 
@@ -806,7 +837,7 @@ async function unJail(message, id, notexist) {
 	let _member = await Member.get(id)
 
 	if (!_member)
-	return message.reply(notexist.random)
+	return message.reply(notexist)
 
 	Event.unJail(message.author, _member)
 
