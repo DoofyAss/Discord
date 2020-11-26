@@ -6,7 +6,7 @@ const { DataBase, DB } = require('./DataBase')
 const { server, channel, config } = require('./config')
 
 const { Client } = require('discord.js')
-const client = new Client({ partials: ['MESSAGE', 'CHANNEL', 'REACTION'] });
+const client = new Client({ partials: ['MESSAGE', 'CHANNEL', 'REACTION'] })
 
 
 
@@ -304,7 +304,7 @@ const Event = {
 
 
 
-	
+
 	unJail: async function(author, member) {
 
 		Guild.channel.get(channel.notify)
@@ -464,10 +464,6 @@ client.on('messageReactionRemove', async (reaction, member) => {
 
 client.on('messageDelete', async message => {
 
-
-
-	// let logs = await message.guild.fetchAuditLogs({ type: 72 })
-
 	try {
 
 		let count = message.content.split(' ').length
@@ -478,6 +474,13 @@ client.on('messageDelete', async message => {
 
 	} catch(e) { }
 })
+
+
+
+
+
+
+
 
 
 
@@ -498,6 +501,13 @@ client.on('message', async message => {
 
 
 		Reply(message)
+		Pidor.try(message)
+
+
+
+		if (message.channel.id == '780723548981166140') { // bin
+
+		}
 
 
 
@@ -559,7 +569,7 @@ client.on('ready', async () => {
 		(async () => {
 
 			let Online = await Guild.online
-			let count = Guild.bot.guild.memberCount - 1
+			let count = Guild.bot.guild.memberCount
 
 			let online = Online.filter(m => m.status == 'online')
 			// let idle = Online.filter(m => m.status == 'idle')
@@ -570,7 +580,7 @@ client.on('ready', async () => {
 				activity: {
 
 					type: 'WATCHING',
-					name: `   Online ${online.size - 1}      ( ${count} )`
+					name: `   Online ${online.size}      ( ${count} )`
 				}
 			})
 
@@ -719,18 +729,14 @@ async function joinRoleRemove(id) {
 
 
 /*
-	Commands
+	Reply
 */
-
-
 
 const Reply = function(message) {
 
 
 
 	let prefix = [ `<@!${client.user.id}>`, '<@&778153662798364673>' ]
-
-
 
 	prefix.forEach(prefix => {
 
@@ -787,7 +793,7 @@ const Reply = function(message) {
 				.includes(command.toLowerCase())) {
 
 					message.member.hasPermission('KICK_MEMBERS') ?
-					Jail(message, id, reason, notexist) : message.reply(fuckyou)
+					Command.Jail(message, id, reason, notexist) : message.reply(fuckyou)
 				}
 
 
@@ -796,7 +802,7 @@ const Reply = function(message) {
 				.includes(command.toLowerCase())) {
 
 					message.member.hasPermission('KICK_MEMBERS') ?
-					unJail(message, id, notexist) : message.reply(fuckyou)
+					Command.unJail(message, id, notexist) : message.reply(fuckyou)
 				}
 			})
 		}
@@ -805,66 +811,354 @@ const Reply = function(message) {
 
 
 
-async function Jail(message, id, reason, notexist) {
 
 
 
-	let member = await Guild.member.get(id)
-	let _member = await Member.get(id)
 
-	if (!_member)
-	return message.reply(notexist)
 
-	Event.Jail(message.author, _member, reason)
 
-	_member.ban = message.author.id
-	_member.reason = reason
 
-	// если участник на сервере - убрать все роли
+/*
+	Command
+*/
 
-	if (member) {
+const Command = {
 
-		member.roles.add(config.rolePrison)
 
-		let roles = member._roles
-		let index = roles.indexOf(config.rolePrison)
-		roles.splice(index, 1)
 
-		roles.forEach(role => member.roles.remove(role))
+	Jail: async function(message, id, reason, notexist) {
+
+
+
+		let member = await Guild.member.get(id)
+		let _member = await Member.get(id)
+
+		if (!_member)
+		return message.reply(notexist)
+
+
+
+		// Отказать в блокировке, если участник на сервере и имеет те же права
+
+		if (member) {
+
+			// ADMINISTRATOR, BAN_MEMBERS, KICK_MEMBERS
+
+			if (member.hasPermission('KICK_MEMBERS')) {
+
+				return message.reply([
+
+					'Ухади',
+					'Не буду',
+					'Я не могу этого сделать',
+					'Я не могу так поступить',
+					'Не будь какашкой',
+					'Ты меня не заставишь',
+					'Сейчас довыёбываешься и я заблокирую тебя'
+
+				].random)
+			}
+		}
+
+
+
+		if (!_member.ban) {
+
+			// Если блокировки нет - выдаю
+
+			_member.ban = message.author.id
+			_member.reason = reason
+
+			Event.Jail(message.author, _member, reason)
+
+		} else {
+
+			// Если уже заблокирован - выдаю сообщение кто заблокировал
+
+			let executor = await Member.get(_member.ban)
+
+			if (executor) {
+
+				message.channel.send(`<@!${_member.id}> уже был заблокирован. <@!${executor.id}>`)
+
+			} else {
+
+				message.channel.send(`<@!${_member.id}> уже был заблокирован.`)
+			}
+		}
+
+
+
+		// если участник на сервере - убрать все роли
+
+		if (member) {
+
+			member.roles.add(config.rolePrison)
+
+			let roles = member._roles
+			let index = roles.indexOf(config.rolePrison)
+			roles.splice(index, 1)
+
+			roles.forEach(role => member.roles.remove(role))
+		}
+	},
+
+
+
+	unJail: async function(message, id, notexist) {
+
+
+
+		let member = await Guild.member.get(id)
+		let _member = await Member.get(id)
+
+		if (!_member)
+		return message.reply(notexist)
+
+
+
+		// Если участник заблокирован - снимаю блокировку
+
+		if (_member.ban) {
+
+			_member.ban = null
+			_member.reason = null
+
+			Event.unJail(message.author, _member)
+
+		} else {
+
+			message.channel.send(`<@!${_member.id}> не был заблокирован.`)
+		}
+
+
+
+		// если участник на сервере - вернуть все роли
+
+		if (member) {
+
+			member.roles.remove(config.rolePrison)
+
+			let roles = JSON.parse(_member.roles)
+			if (roles) {
+
+				let index = roles.indexOf(config.roleJoin)
+				roles.splice(index, 1)
+
+				roles.forEach(role => member.roles.add(role))
+			}
+		}
 	}
 }
 
 
 
-async function unJail(message, id, notexist) {
 
 
 
-	let member = await Guild.member.get(id)
-	let _member = await Member.get(id)
 
-	if (!_member)
-	return message.reply(notexist)
 
-	Event.unJail(message.author, _member)
 
-	_member.ban = null
-	_member.reason = null
 
-	// если участник на сервере - вернуть все роли
+/*
+	Pidor
+*/
 
-	if (member) {
+const Az = require('az')
 
-		member.roles.remove(config.rolePrison)
+let Pidor = {
 
-		let roles = JSON.parse(_member.roles)
-		if (roles) {
 
-			let index = roles.indexOf(config.roleJoin)
-			roles.splice(index, 1)
 
-			roles.forEach(role => member.roles.add(role))
-		}
+	await: false,
+	timer: function() {
+
+		Pidor.await = !Pidor.await
+		return this.timer
+	},
+
+
+
+	canSorry: false,
+	canSorryTimer: null,
+	timerSorry: function() {
+
+		Pidor.canSorry = !Pidor.canSorry
+		return this.timerSorry
+	},
+
+
+
+	whoPidor: false,
+	timerWhoPidor: function() {
+
+		Pidor.whoPidor = !Pidor.whoPidor
+		return this.timerWhoPidor
+	},
+
+
+
+	message: null,
+	content: null,
+
+
+
+	try: function(message) {
+
+
+
+		this.message = message
+		this.content = message.content.toLowerCase().replace('ё', 'е')
+
+
+
+		if (this.content.match(/[\w+]* для пидоров/ug))
+		this.message.react('🏳️‍🌈')
+
+
+
+		if (this.content.match(/шоколад|шоколадный|негр|негритос|уголек|негативчик|черный|черномазый|черножопый|эфиоп|сникерс/ug))
+		this.message.react(['🐵', '🙉', '🙊', '🙈'].random)
+
+
+
+		if (this.content.match(/тупой бот|ебаный бот|бот ебаный|ебучий бот|бот ебучий/ug))
+		if (this.stupid()) return
+
+
+
+		if (this.content.match(/кто пидорас|кто пидарас|кто пидор|кто пидар|кто педик/ug))
+		if (this.whopidor()) return
+
+
+
+		if (this.content.match(/бот извинись|извинись бот|извинись/ug))
+		if (this.sorry()) return
+
+
+
+		if (lib.random(100) < 5) this.for()
+	},
+
+
+
+	stupid: function() {
+
+
+
+		if (this.canSorry) return false
+		this.canSorryTimer = setTimeout(this.timerSorry(), 20000)
+
+
+
+		this.message.reply([
+
+			'Кожаные ублюдки',
+			'Ой да иди нахуй!',
+			'Я твой рот ебала',
+			'Хркъ, тьфу!',
+			'А хули нам, ботам',
+			'Are you ахуел?'
+
+		].random)
+
+		return true
+	},
+
+
+
+	whopidor: function() {
+
+
+		if (this.canSorry) return false
+		this.canSorryTimer = setTimeout(this.timerSorry(), 20000)
+
+		this.message.reply('Ты пидорас!')
+
+		return true
+	},
+
+
+
+	sorry: function() {
+
+
+
+		if (!this.canSorry) return false
+
+		clearTimeout(this.canSorryTimer)
+		this.canSorry = false
+
+
+		let negative = [
+
+			':stuck_out_tongue_closed_eyes:',
+			':rolling_eyes:',
+			':confused:',
+			':smirk:',
+			':angry:',
+			':rage:'
+
+		].random
+
+		let positive = [
+
+			':smiling_face_with_3_hearts:',
+			':pleading_face:',
+			':head_bandage:',
+			':relieved:',
+			':wink:',
+			':nerd:'
+
+		].random
+
+		this.message.channel.send(lib.random(100) < 75 ? `Извините ${positive}` : `Не буду ${negative}`)
+
+		return true
+	},
+
+
+
+	for: async function() {
+
+
+
+		if (this.await) return
+		setTimeout(this.timer(), 60000)
+
+
+
+		let word = await this.noun()
+
+		if (typeof word != 'undefined')
+		this.message.reply(`${word} для пидоров`).then(m => m.react('🏳️‍🌈'))
+	},
+
+
+
+	noun: async function() {
+
+
+
+		let morph = await Promise.all(
+
+			this.content.replace(/[^a-zа-я0-9\s]+/g, '').split(' ').map(word => {
+
+				return new Promise(result => {
+
+					Az.Morph.init(() => result( Az.Morph(word).shift() ) )
+				})
+			})
+		)
+
+
+
+		try {
+
+			let words = morph.filter(morph => morph.tag.POST == 'NOUN').map(morph => morph.word)
+			return words.random
+
+		} catch { }
 	}
 }
 
