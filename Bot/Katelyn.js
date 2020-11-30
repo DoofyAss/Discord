@@ -56,6 +56,13 @@ const Guild = {
 			let members = await this.cache.members.fetch()
 			return members.map(m => m.guild.presences.cache).shift()
         })()
+	},
+
+
+
+	get emoji() {
+
+		return this.cache.emojis.cache
 	}
 }
 
@@ -317,6 +324,107 @@ const Event = {
 				icon_url: member.avatar ? `https://cdn.discordapp.com/avatars/${member.id}/${member.avatar}.png?size=64` : null
 			}
 		}})
+	},
+
+
+
+
+
+
+
+
+
+
+	roleOfDay: async function(Online) {
+
+		// Получаем всех участников с временной ролью
+
+		let members = await DataBase.roleOfDay()
+
+
+
+		members.forEach(async member => {
+
+			// Если дата из базы меньше текущей - убираю роль
+
+			if (member.roleDate < Date.now()) {
+
+				// Если участник на сервере
+
+				let memberGuild = Guild.member.get(member.id)
+				let memberDataBase = await Member.get(member.id)
+
+				if (memberGuild) {
+
+					memberGuild.roles.remove(config.roleOfDay)
+
+				} else {
+
+					// Если участник покинул сервер
+					// Получаю все роли, кроме временной
+
+					let roles = JSON.parse(memberDataBase.roles)
+					let index = roles.indexOf(config.roleOfDay)
+					if (index > -1) roles.splice(index, 1)
+
+					// Возвращаю все роли, кроме временной
+
+					member.roles = JSON.stringify(roles)
+				}
+
+				memberDataBase.roleDate = null
+			}
+		})
+
+
+
+		// Если нет участников с временной ролью
+
+		if (!members.length) {
+
+			let id = Online.map(m => m.userID).random
+			this.giveRoleOfDay(id)
+		}
+	},
+
+
+
+	giveRoleOfDay: async function(id) {
+
+
+
+		let _member = Guild.member.get(id)
+		let member = await Member.get(id)
+
+		if (member) {
+
+			if (!member.ban) {
+
+
+
+				member.roleDate = Date.now() + 86400000
+
+				if (!_member._roles.includes(config.roleOfDay))
+				await _member.roles.add(config.roleOfDay)
+
+
+
+				/*
+				Guild.channel.get(channel.notify)
+				.send({ embed: {
+
+					color: _member.displayHexColor.replace('#000000', null),
+					description: 'Тухлое яйко дня',
+					author: {
+
+						name: _member.user.nickname ?? _member.user.username,
+						icon_url: member.avatar ? `https://cdn.discordapp.com/avatars/${member.id}/${member.avatar}.png?size=64` : null
+					}
+
+				}}).then(m => m.react('💛'))
+				*/
+			}
+		}
 	}
 }
 
@@ -375,7 +483,7 @@ const Member = {
 
 client.on('guildMemberAdd', async member => {
 
-	if (member.bot) return
+	if (member.user.bot) return
 
 	Event.join(member.id)
 })
@@ -384,7 +492,7 @@ client.on('guildMemberAdd', async member => {
 
 client.on('guildMemberRemove', async member => {
 
-	if (member.bot) return
+	if (member.user.bot) return
 
 	Event.left(member.id)
 })
@@ -393,7 +501,7 @@ client.on('guildMemberRemove', async member => {
 
 client.on('guildBanRemove', async (guild, member) => {
 
-	if (member.bot) return
+	if (member.user.bot) return
 
 	Event.banRemove(member.id)
 })
@@ -402,12 +510,31 @@ client.on('guildBanRemove', async (guild, member) => {
 
 client.on('guildMemberUpdate', async (guild, member) => {
 
-	if (member.bot) return
+	if (member.user.bot) return
+
+
 
 	if (member._roles.includes(config.rolePrison)) {
 
 		joinRoleRemove(member.user.id)
 	}
+
+
+
+	/* onChangeAvatar
+
+	let _member = await Member.get(member.id)
+	if (_member) {
+
+		if (_member.avatar != member.user.avatar) {
+
+
+		}
+	}
+
+	*/
+
+
 
 	DataBase.member.save(member)
 })
@@ -544,13 +671,12 @@ client.on('message', async message => {
 
 client.on('ready', async () => {
 
-	process.title = client.user.tag
-
 
 
 	/*
 		TMP
 	*/
+
 
 
 
@@ -568,6 +694,8 @@ client.on('ready', async () => {
 
 		(async () => {
 
+
+
 			let Online = await Guild.online
 			let count = Guild.bot.guild.memberCount
 
@@ -583,6 +711,10 @@ client.on('ready', async () => {
 					name: `   Online ${online.size}      ( ${count} )`
 				}
 			})
+
+
+
+			Event.roleOfDay(Online)
 
         })()
 
@@ -689,6 +821,10 @@ client.on('ready', async () => {
 
 		roleChannel.send('` Присоединяйся `').then(m => m.react('🍌'))
 	}
+
+
+
+	process.title = client.user.tag
 })
 
 
@@ -803,6 +939,15 @@ const Reply = function(message) {
 
 					message.member.hasPermission('KICK_MEMBERS') ?
 					Command.unJail(message, id, notexist) : message.reply(fuckyou)
+				}
+
+
+
+				if (['яйкодня', 'тухлоедня', 'тухлятинадня']
+				.includes(command.toLowerCase())) {
+
+					message.member.hasPermission('KICK_MEMBERS') ?
+					Event.giveRoleOfDay(id) : message.reply(fuckyou)
 				}
 			})
 		}
@@ -998,6 +1143,15 @@ let Pidor = {
 
 
 
+	awaitAnime: false,
+	timerAnime: function() {
+
+		Pidor.awaitAnime = !Pidor.awaitAnime
+		return this.timerAnime
+	},
+
+
+
 	message: null,
 	content: null,
 
@@ -1012,8 +1166,13 @@ let Pidor = {
 
 
 
-		if (this.content.match(/[\w+]* для пидоров/ug))
-		this.message.react('🏳️‍🌈')
+		if (this.content.match(/[\w+]* для пидоров|[\w+]* для пидарасов|жопотрах|гей|педик|пидорас|пидрила|пидарюга|гомосек|гомик|говномес|голубой|гомодрил|лезбиянка|лезбуха|лезба/ug))
+		this.message.react(['🏳️‍🌈', '🌈'].random)
+
+
+
+		if (this.content.match(/петух|курица/ug))
+		this.message.react('🐓')
 
 
 
@@ -1037,7 +1196,12 @@ let Pidor = {
 
 
 
-		if (lib.random(100) < 5) this.for()
+		if (this.content.match(/аниме|анимэ|anime/ug))
+		if (this.anime()) return
+
+
+
+		if (lib.random(100) < 3) this.for()
 	},
 
 
@@ -1047,7 +1211,7 @@ let Pidor = {
 
 
 		if (this.canSorry) return false
-		this.canSorryTimer = setTimeout(this.timerSorry(), 20000)
+		this.canSorryTimer = setTimeout(this.timerSorry(), 60000)
 
 
 
@@ -1067,13 +1231,17 @@ let Pidor = {
 
 
 
-	whopidor: function() {
+	whopidor: async function() {
 
+
+		if (this.await) return
+		setTimeout(this.timer(), 60000)
 
 		if (this.canSorry) return false
-		this.canSorryTimer = setTimeout(this.timerSorry(), 20000)
+		this.canSorryTimer = setTimeout(this.timerSorry(), 60000)
 
 		this.message.reply('Ты пидорас!')
+		this.message.channel.send('<:emoji:781540642941435905>')
 
 		return true
 	},
@@ -1113,6 +1281,28 @@ let Pidor = {
 		].random
 
 		this.message.channel.send(lib.random(100) < 75 ? `Извините ${positive}` : `Не буду ${negative}`)
+
+		return true
+	},
+
+
+
+	anime: async function() {
+
+
+		if (this.awaitAnime) return false
+		setTimeout(this.timerAnime(), 60000)
+
+		this.message.channel.send([
+
+			'Почему воняет пердой?',
+			'Несёт прям как с канализации...',
+			'Чё говном воняет?',
+			'Чувствуете? Запах какашек 🤮',
+			'Ну и вонища тут у вас 🤢',
+			'Я тут накакала, уберите кто-нибудь 💩'
+
+		].random)
 
 		return true
 	},

@@ -93,6 +93,14 @@ class DataBase {
 
 
 
+	not(key, array) {
+
+		this.WHERE = ` WHERE ${ key } NOT IN ("${ array.join(', ') }")`
+		return this
+	}
+
+
+
 	like(key, value) {
 
 		this.WHERE = ` WHERE ${ key } LIKE '%${ value }%'`

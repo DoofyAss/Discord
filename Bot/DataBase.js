@@ -23,6 +23,7 @@ const DataBase = {
 
 			joinDate: column.varchar.null,
 			leftDate: column.varchar.null,
+			roleDate: column.varchar.null,
 
 			experience: column.integer.null,
 			message: column.integer.null,
@@ -33,6 +34,13 @@ const DataBase = {
 		})
 
 		.catch(console.log)
+	},
+
+
+
+	roleOfDay: async function() {
+
+		return await DB('discord.member').not('roleDate', [null]).fetch()
 	},
 
 
@@ -156,6 +164,7 @@ const DataBase = {
 
 				// получаю историю никнеймов
 				let nicknames = JSON.parse(data.nick)
+
 				// возвращаю последний никнейм
 				if (nicknames) member.setNickname(nicknames.shift())
 
