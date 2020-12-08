@@ -3,7 +3,7 @@
 
 const { lib } = require('./lib/lib.js')
 const { DataBase, DB } = require('./DataBase')
-const { server, channel, config } = require('./config')
+const { server, channel, role, config } = require('./config')
 
 const { Client } = require('discord.js')
 const client = new Client({ partials: ['MESSAGE', 'CHANNEL', 'REACTION'] })
@@ -49,13 +49,33 @@ const Guild = {
 
 
 
-	get online() {
+	get role() {
 
-		return (async () => {
+		return this.cache.roles.cache
+	},
 
-			let members = await this.cache.members.fetch()
-			return members.map(m => m.guild.presences.cache).shift()
-        })()
+
+
+	members: async function() {
+
+		let cache = await this.cache.members.fetch({ cache: false })
+		let members = cache.filter(member => !member.user.bot)
+
+		let online = members.filter(member => member.presence.status != 'offline')
+		let offline = members.filter(member => member.presence.status == 'offline')
+
+		return {
+
+			count: {
+
+				all: members.size,
+				online: online.size,
+				offline: offline.size,
+			},
+
+			online: online,
+			offline: offline
+		}
 	},
 
 
@@ -345,9 +365,13 @@ const Event = {
 
 		members.forEach(async member => {
 
-			// Если дата из базы меньше текущей - убираю роль
+			// console.log(`[${Date.now().time}]`, `[${member.id}]`, member.name, Online.has(member.id) ? 'online' : 'offline')
 
-			if (member.roleDate < Date.now()) {
+			/*
+				Убираю роль, если дата из базы меньше текущей или участник не в сети
+			*/
+
+			if (member.roleDate < Date.now() || !Online.has(member.id)) {
 
 				// Если участник на сервере
 
@@ -373,7 +397,20 @@ const Event = {
 				}
 
 				memberDataBase.roleDate = null
-			}
+
+				/*Guild.role.get(config.roleOfDay).edit({
+					name: config.roleOfDayName
+				})*/
+
+			}/* else {
+
+				// Если время ещё не вышло, определяем сколько осталось
+
+				Guild.role.get(config.roleOfDay).edit({
+					name: `${config.roleOfDayName} \ - \ ${(member.roleDate - Date.now()).became}`
+				})
+			}*/
+
 		})
 
 
@@ -382,7 +419,10 @@ const Event = {
 
 		if (!members.length) {
 
-			let id = Online.map(m => m.userID).random
+			let id = Online.map(member => member.user.id).random
+
+			// if (['371199971099410435', '270862586688307200'].includes(id)) return console.log('dont give role', id)
+
 			this.giveRoleOfDay(id)
 		}
 	},
@@ -409,20 +449,18 @@ const Event = {
 
 
 
-				/*
-				Guild.channel.get(channel.notify)
+				Guild.channel.get(channel.chat)
 				.send({ embed: {
 
 					color: _member.displayHexColor.replace('#000000', null),
 					description: 'Тухлое яйко дня',
 					author: {
 
-						name: _member.user.nickname ?? _member.user.username,
+						name: _member.displayName,
 						icon_url: member.avatar ? `https://cdn.discordapp.com/avatars/${member.id}/${member.avatar}.png?size=64` : null
 					}
 
 				}}).then(m => m.react('💛'))
-				*/
 			}
 		}
 	}
@@ -677,6 +715,18 @@ client.on('ready', async () => {
 		TMP
 	*/
 
+	/*setInterval(function interval() {
+
+		(async () => {
+
+
+
+        })()
+
+		return interval
+
+	}(), 100000)*/
+
 
 
 
@@ -696,25 +746,23 @@ client.on('ready', async () => {
 
 
 
-			let Online = await Guild.online
-			let count = Guild.bot.guild.memberCount
+			let Members = await Guild.members()
+			let online = Members.online.filter(m => m.presence.status == 'online')
 
-			let online = Online.filter(m => m.status == 'online')
-			// let idle = Online.filter(m => m.status == 'idle')
-			// let dnd = Online.filter(m => m.status == 'dnd')
+
 
 			client.user.setPresence({
 
 				activity: {
 
 					type: 'WATCHING',
-					name: `   Online ${online.size}      ( ${count} )`
+					name: `   Online ${ online.size }      ( ${ Members.count.all + 1 } )`
 				}
 			})
 
 
 
-			Event.roleOfDay(Online)
+			Event.roleOfDay(Members.online)
 
         })()
 
@@ -1044,7 +1092,7 @@ const Command = {
 			let index = roles.indexOf(config.rolePrison)
 			roles.splice(index, 1)
 
-			roles.forEach(role => member.roles.remove(role))
+			roles.forEach(r => member.roles.remove(r))
 		}
 	},
 
@@ -1090,7 +1138,7 @@ const Command = {
 				let index = roles.indexOf(config.roleJoin)
 				roles.splice(index, 1)
 
-				roles.forEach(role => member.roles.add(role))
+				roles.forEach(r => member.roles.add(r))
 			}
 		}
 	}
@@ -1166,7 +1214,32 @@ let Pidor = {
 
 
 
-		if (this.content.match(/[\w+]* для пидоров|[\w+]* для пидарасов|жопотрах|гей|педик|пидорас|пидрила|пидарюга|гомосек|гомик|говномес|голубой|гомодрил|лезбиянка|лезбуха|лезба/ug))
+		if (this.content.match(/тупой бот|ебаный бот|бот ебаный|ебучий бот|бот ебучий/ug))
+		if (this.stupid()) return
+
+
+
+		if (this.content.match(/кто пидорас|кто пидарас/ug))
+		if (this.whopidor()) return
+
+
+
+		if (this.content.match(/кто пидор|кто пидар|кто педик/ug))
+		if (this.whopidor(true)) return
+
+
+
+		if (this.content.match(/бот извинись|извинись бот|извинись/ug))
+		if (this.sorry()) return
+
+
+
+		if (this.content.match(/аниме|анимэ|anime/ug))
+		if (this.anime()) return
+
+
+
+		if (this.content.match(/[\w+]* для пидоров|[\w+]* для пидарасов|жопотрах|гей|педик|пидор|пидрила|пидарюга|гомосек|гомик|глиномес|говномес|голубой|гомодрил|лезбиянка|лезбуха|лезба/ug))
 		this.message.react(['🏳️‍🌈', '🌈'].random)
 
 
@@ -1178,26 +1251,6 @@ let Pidor = {
 
 		if (this.content.match(/шоколад|шоколадный|негр|негритос|уголек|негативчик|черный|черномазый|черножопый|эфиоп|сникерс/ug))
 		this.message.react(['🐵', '🙉', '🙊', '🙈'].random)
-
-
-
-		if (this.content.match(/тупой бот|ебаный бот|бот ебаный|ебучий бот|бот ебучий/ug))
-		if (this.stupid()) return
-
-
-
-		if (this.content.match(/кто пидорас|кто пидарас|кто пидор|кто пидар|кто педик/ug))
-		if (this.whopidor()) return
-
-
-
-		if (this.content.match(/бот извинись|извинись бот|извинись/ug))
-		if (this.sorry()) return
-
-
-
-		if (this.content.match(/аниме|анимэ|anime/ug))
-		if (this.anime()) return
 
 
 
@@ -1231,17 +1284,34 @@ let Pidor = {
 
 
 
-	whopidor: async function() {
+	whopidor: async function(off) {
 
 
-		if (this.await) return
-		setTimeout(this.timer(), 60000)
+		if (this.await) return false
+		setTimeout(this.timer(), 1000)
 
-		if (this.canSorry) return false
-		this.canSorryTimer = setTimeout(this.timerSorry(), 60000)
+		// if (this.canSorry) return false
+		// this.canSorryTimer = setTimeout(this.timerSorry(), 60000)
 
-		this.message.reply('Ты пидорас!')
+
+
+		if (['371199971099410435', '270862586688307200'].includes(this.message.author.id)) {
+
+			let Members = await Guild.members()
+
+			var id = off ?
+			Members.offline.map(member => member.user.id).random :
+			Members.online.map(member => member.user.id).random
+
+		} else {
+
+			var id = this.message.author.id
+		}
+
+		this.message.channel.send(`<@!${id}> Ты пидорас!`)
 		this.message.channel.send('<:emoji:781540642941435905>')
+
+
 
 		return true
 	},

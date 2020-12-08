@@ -48,6 +48,27 @@ let lib = {
 	timestamp(date) {
 
 		return new Date(date).getTime()
+	},
+
+
+
+	became(milisec) {
+
+		let d = Math.floor(milisec / 86400000)
+		let sec = Math.floor(milisec / 1000 - d * 86400)
+
+		let h = Math.floor(sec / 60 / 60)
+		let m = Math.floor(sec / 60 - h * 60)
+		let s = Math.floor(sec % 60)
+
+		return [
+
+			(d ? `${d} д` : ''),
+			(h ? `${h} ч` : ''),
+			(m ? `${m} мин` : ''),
+			// (s ? `${s}сек` : '')
+
+		].join(' ').replace(/ +/g, ' ').trim()
 	}
 }
 
@@ -110,6 +131,26 @@ Object.defineProperty(String.prototype, 'time', {
     get: function() {
 
 		return lib.time(this)
+	}
+})
+
+
+
+Object.defineProperty(Number.prototype, 'became', {
+
+    get: function() {
+
+		return lib.became(this)
+	}
+})
+
+
+
+Object.defineProperty(String.prototype, 'became', {
+
+    get: function() {
+
+		return lib.became(this)
 	}
 })
 
