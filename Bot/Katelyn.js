@@ -442,14 +442,14 @@ const Event = {
 
 
 
-				member.roleDate = Date.now() + 86400000
+				member.roleDate = Date.now() + 43200000
 
 				if (!_member._roles.includes(config.roleOfDay))
 				await _member.roles.add(config.roleOfDay)
 
 
 
-				Guild.channel.get(channel.chat)
+				/*Guild.channel.get(channel.chat)
 				.send({ embed: {
 
 					color: _member.displayHexColor.replace('#000000', null),
@@ -460,7 +460,7 @@ const Event = {
 						icon_url: member.avatar ? `https://cdn.discordapp.com/avatars/${member.id}/${member.avatar}.png?size=64` : null
 					}
 
-				}}).then(m => m.react('💛'))
+				}}).then(m => m.react('💛'))*/
 			}
 		}
 	}
@@ -559,21 +559,6 @@ client.on('guildMemberUpdate', async (guild, member) => {
 
 
 
-	/* onChangeAvatar
-
-	let _member = await Member.get(member.id)
-	if (_member) {
-
-		if (_member.avatar != member.user.avatar) {
-
-
-		}
-	}
-
-	*/
-
-
-
 	DataBase.member.save(member)
 })
 
@@ -665,6 +650,11 @@ client.on('message', async message => {
 
 
 
+		if (message.content.startsWith('/'))
+		return Command.try(message)
+
+
+
 		Reply(message)
 		Pidor.try(message)
 
@@ -672,6 +662,27 @@ client.on('message', async message => {
 
 		if (message.channel.id == '780723548981166140') { // bin
 
+		}
+
+
+
+		if ([
+
+			'786423732151123988', // cyberpunk
+			'796088083581370448', // мемасы
+
+		].includes(message.channel.id)) {
+
+			let attachments = message.attachments.map(a => a.attachment)
+
+			if (attachments.length) {
+
+				message.react('💛')
+
+			} else {
+
+				message.delete()
+			}
 		}
 
 
@@ -991,7 +1002,7 @@ const Reply = function(message) {
 
 
 
-				if (['яйкодня', 'тухлоедня', 'тухлятинадня']
+				if (['яйко']
 				.includes(command.toLowerCase())) {
 
 					message.member.hasPermission('KICK_MEMBERS') ?
@@ -1016,6 +1027,162 @@ const Reply = function(message) {
 */
 
 const Command = {
+
+
+
+	try: async function(message) {
+
+
+		this.message = message
+		message.delete()
+
+
+
+		this.args = message.content.slice(1).trim().split(' ')
+		let cmd = this.args.shift().toLowerCase()
+
+		if (cmd == 'egg') this.egg()
+
+		if (!message.member.hasPermission('KICK_MEMBERS')) return
+
+		if (cmd == 'say') this.say()
+		if (cmd == 'react') this.react()
+
+		if (cmd == 'lovey') this.lovey()
+		if (cmd == 'lover') this.lover()
+		if (cmd == 'loveb') this.loveb()
+		if (cmd == 'clear') this.clear()
+	},
+
+
+
+	egg: async function() {
+
+		let members = await DataBase.roleOfDay()
+
+		members.forEach(async member => {
+
+			let _member = await Guild.member.get(member.id)
+
+			if (_member)
+			this.message.channel.send({
+
+				embed: {
+
+					color: _member.displayHexColor,
+					description: `<@!${member.id}> \ \ до истечения роли осталось: \ \ ${(member.roleDate - Date.now()).became}`
+				}
+			})
+		})
+	},
+
+
+
+	say: function() {
+
+
+		let content = this.args.join(' ')
+		this.message.channel.send(content)
+	},
+
+
+
+	react: async function() {
+
+		let id = this.args.shift()
+		let emoji = this.args.shift()
+
+		try {
+
+			let message = await this.message.channel.messages.fetch(id)
+			if (message) {
+
+				message.react(emoji)
+			}
+
+		} catch { }
+	},
+
+
+
+	lovey: async function() {
+
+		let id = this.args.join('')
+
+		try {
+
+			let message = await this.message.channel.messages.fetch(id)
+			if (message) {
+
+				message.react('💛')
+			}
+
+		} catch { }
+	},
+
+
+
+	lover: async function() {
+
+		let id = this.args.join('')
+
+		try {
+
+			let message = await this.message.channel.messages.fetch(id)
+			if (message) {
+
+				message.react('❤')
+			}
+
+		} catch { }
+	},
+
+
+
+	loveb: async function() {
+
+		let id = this.args.join('')
+
+		try {
+
+			let message = await this.message.channel.messages.fetch(id)
+			if (message) {
+
+				message.react('💔')
+			}
+
+		} catch { }
+	},
+
+
+
+	clear: async function() {
+
+		let id = this.args.join('')
+
+		try {
+
+			let message = await this.message.channel.messages.fetch(id)
+			if (message) {
+
+				await message.reactions.removeAll()
+			}
+
+		} catch { }
+	},
+
+
+
+
+
+
+
+
+
+
+	/*
+		Reply Command
+	*/
 
 
 
@@ -1072,7 +1239,15 @@ const Command = {
 
 			if (executor) {
 
-				message.channel.send(`<@!${_member.id}> уже был заблокирован. <@!${executor.id}>`)
+				if (_member.reason) {
+
+					message.channel.send(`<@!${_member.id}> уже был заблокирован. <@!${executor.id}> ( ${ _member.reason } )`)
+
+				} else {
+
+					message.channel.send(`<@!${_member.id}> уже был заблокирован. <@!${executor.id}>`)
+				}
+
 
 			} else {
 

@@ -12,10 +12,16 @@ const DataBase = {
 
 	init: function() {
 
+
+
+		/*
+			Member
+		*/
+
 		DB('discord.member').init({
 
 			id: column.varchar.unique,
-			name: column.varchar,
+			name: column.varchar.null,
 			discriminator: column.varchar,
 			nick: column.varchar.null,
 			avatar: column.varchar.null,
@@ -34,6 +40,86 @@ const DataBase = {
 		})
 
 		.catch(console.log)
+
+
+
+		/*
+			Login, Discriminator, Name - log
+		*/
+
+		DB('discord.event').init({
+
+			id: column.integer.increment,
+			member: column.varchar.null,
+			name: column.varchar.null,
+			discriminator: column.varchar.null,
+			nick: column.varchar.null,
+			date: column.varchar.null
+		})
+
+		.catch(console.log)
+
+
+
+		DB('discord.music').init({
+
+			id: column.integer.increment,
+			message: column.varchar,
+			member: column.varchar.null,
+			name: column.varchar.null,
+			link: column.varchar,
+			cur: column.integer.null
+		})
+
+		.catch(console.log)
+	},
+
+
+
+	music: {
+
+
+
+		all: async function() {
+
+			return await DB('discord.music').fetch()
+		},
+
+
+
+		get: async function(id) {
+
+			return await DB('discord.music', 'message', id).fetch()
+		},
+
+
+
+		remove: async function(message) {
+
+			return await DB('discord.music', 'message', message).delete()
+		},
+
+
+
+		add: async function(data) {
+
+			return await DB('discord.music').insert(data)
+		},
+
+
+
+		cur: async function(id) {
+
+			let item = await DB('discord.music', id).fetch()
+
+			if (item) {
+
+				await DB('discord.music', 'message', item.message).update({ cur: null })
+				await DB('discord.music', id).update({ cur: 1 })
+
+				return true
+			}
+		}
 	},
 
 
@@ -81,7 +167,7 @@ const DataBase = {
 			let memberData = {
 
 				id: member.user.id,
-				name: member.user.username,
+				name: member.user.username.match(/^[а-яА-Я\w\s\-\.]*$/g) ? member.user.username : null, // для долбоёбов, у которых вместо логина всякая параша из разных символов
 				discriminator: member.user.discriminator,
 				avatar: member.user.avatar
 			}
@@ -190,7 +276,7 @@ const DataBase = {
 
 				data = {
 
-					name: member.user.username,
+					name: member.user.username.match(/^[а-яА-Я\w\s\-\.]*$/g) ? member.user.username : null, // для долбоёбов, у которых вместо логина всякая параша из разных символов
 					discriminator: member.user.discriminator,
 					avatar: member.user.avatar,
 					leftDate: null
