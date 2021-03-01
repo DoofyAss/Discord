@@ -8,6 +8,8 @@ const { server, channel, role, config } = require('./config')
 const { Client } = require('discord.js')
 const client = new Client({ partials: ['MESSAGE', 'CHANNEL', 'REACTION'] })
 
+const ytdl = require('ytdl-core')
+
 
 
 
@@ -144,7 +146,7 @@ const Event = {
 
 				// если прошло больше суток с момента ухода
 
-				if (parseInt(member.leftDate) + 86400000 < Date.now()) {
+				/*if (parseInt(member.leftDate) + 86400000 < Date.now()) {
 
 					let replys = [
 
@@ -156,7 +158,7 @@ const Event = {
 					]
 
 					notify.send(`<@${id}> ${replys.random}`)
-				}
+				}*/
 			}
 
 
@@ -637,8 +639,16 @@ client.on('messageDelete', async message => {
 client.on('message', async message => {
 
 
-
 	if (message.author.bot) return
+
+	console.log(`[ ${Date.now().time} ] ${message.author.username}: ${message.content}`)
+
+
+
+
+
+
+
 
 
 
@@ -650,7 +660,7 @@ client.on('message', async message => {
 
 
 
-		if (message.content.startsWith('/'))
+		if (message.content.startsWith('!'))
 		return Command.try(message)
 
 
@@ -767,7 +777,7 @@ client.on('ready', async () => {
 				activity: {
 
 					type: 'WATCHING',
-					name: `   Online ${ online.size }      ( ${ Members.count.all + 1 } )`
+					name: ` \u200B Online ${ online.size } \u200B ( ${ Members.count.all + 1 } )`
 				}
 			})
 
@@ -835,6 +845,8 @@ client.on('ready', async () => {
 
 	if (joinMessage) {
 
+		// joinMessage.edit('` Для полного доступа жми на банан `')
+
 		let joinMessageReactions = await joinMessage.reactions.resolve('🍌')
 
 		let joinRoleMembers = await joinMessageReactions.users.fetch()
@@ -878,7 +890,7 @@ client.on('ready', async () => {
 
 	} else {
 
-		roleChannel.send('` Присоединяйся `').then(m => m.react('🍌'))
+		roleChannel.send('` Для полного доступа жми на банан `').then(m => m.react('🍌'))
 	}
 
 
@@ -954,32 +966,6 @@ const Reply = function(message) {
 			// аргументы команды
 			let commands = args.splice(args.length - index - 1, args.length - 1)
 
-
-			let fuckyou = [
-
-				'А чё ты ещё хочешь?',
-				'А нахуй бы тебе не пойти?',
-				'А хуй тебе',
-				'Да чёт мне лень',
-				'У тебя ещё банилка не выросла',
-				'Любой каприз за ваш сасай',
-				'Баны отключены за неуплату',
-				'Ты кто блять?'
-
-			].random
-
-
-			let notexist = [
-
-				'Не могу найти такого участника',
-				'Такого участника нет',
-				'Я тупенькая и найти такого участника не могу',
-				'Не знаю кто это',
-				'А это кто?'
-
-			].random
-
-
 			commands.forEach(command => {
 
 
@@ -987,8 +973,7 @@ const Reply = function(message) {
 				if (['бан', 'бань', 'забань', 'заблокировать', 'заблокируй', 'забанить', 'блок']
 				.includes(command.toLowerCase())) {
 
-					message.member.hasPermission('KICK_MEMBERS') ?
-					Command.Jail(message, id, reason, notexist) : message.reply(fuckyou)
+					Command.jail(message, id, reason, true)
 				}
 
 
@@ -996,17 +981,7 @@ const Reply = function(message) {
 				if (['разбан', 'разбань', 'разбанить', 'разблокировать', 'разблокируй']
 				.includes(command.toLowerCase())) {
 
-					message.member.hasPermission('KICK_MEMBERS') ?
-					Command.unJail(message, id, notexist) : message.reply(fuckyou)
-				}
-
-
-
-				if (['яйко']
-				.includes(command.toLowerCase())) {
-
-					message.member.hasPermission('KICK_MEMBERS') ?
-					Event.giveRoleOfDay(id) : message.reply(fuckyou)
+					Command.unjail(message, id, true)
 				}
 			})
 		}
@@ -1032,26 +1007,13 @@ const Command = {
 
 	try: async function(message) {
 
-
 		this.message = message
 		message.delete()
-
-
 
 		this.args = message.content.slice(1).trim().split(' ')
 		let cmd = this.args.shift().toLowerCase()
 
-		if (cmd == 'egg') this.egg()
-
-		if (!message.member.hasPermission('KICK_MEMBERS')) return
-
-		if (cmd == 'say') this.say()
-		if (cmd == 'react') this.react()
-
-		if (cmd == 'lovey') this.lovey()
-		if (cmd == 'lover') this.lover()
-		if (cmd == 'loveb') this.loveb()
-		if (cmd == 'clear') this.clear()
+		if (Command[cmd]) Command[cmd]()
 	},
 
 
@@ -1078,8 +1040,101 @@ const Command = {
 
 
 
+	info: async function() {
+
+
+
+		let id = this.args.shift()
+		id = id ? id.split(/\D/g).join('') : this.message.author.id
+
+
+
+		let events = await DataBase.member.events(id)
+		if (!events) return
+
+		let nicknames = events
+		.filter(e => e.nick != null)
+		.map(e => e.nick)
+
+		nicknames = [...new Set(nicknames)].join('\n')
+
+		let usernames = events
+		.filter(e => e.name != null)
+		.map(e => `${e.name}#${e.discriminator}`)
+
+		usernames = [...new Set(usernames)].join('\n')
+
+
+		// server member
+
+		let member = Guild.member.get(id)
+		if (member) {
+
+			this.message.channel.send({ embed: {
+
+				color: member.displayHexColor == '#000000' ? null : member.displayHexColor,
+				author: {
+
+					name: `${member.displayName}`,
+					icon_url: member.user.avatar ? `https://cdn.discordapp.com/avatars/${member.user.id}/${member.user.avatar}.png?size=64` : null
+				},
+				fields: [
+					{
+						name: 'Имена',
+						value: usernames,
+						inline: true
+					},
+					{
+						name: '\u200B',
+						value: '\u200B',
+						inline: true
+					},
+					{
+						name: '\u200B',
+						value: nicknames,
+						inline: true
+					},
+					{
+						name: 'Дата присоединения',
+						value: member.joinedTimestamp.date,
+						inline: true
+					}
+				],
+				footer: {
+
+					// text: member.user.avatar ? `[аватар](https://cdn.discordapp.com/avatars/${member.user.id}/${member.user.avatar}.png)` : null
+				},
+				description: member.user.avatar ? `[аватар](https://cdn.discordapp.com/avatars/${member.user.id}/${member.user.avatar}.png?size=1024)` : null
+			} })
+
+		} else {
+
+			// database member
+
+			let _member = await Member.get(id)
+			if (!_member) return
+
+			this.message.channel.send({ embed: {
+
+				author: {
+
+					name: `${_member.name}#${_member.discriminator}`,
+					icon_url: _member.avatar ? `https://cdn.discordapp.com/avatars/${_member.id}/${_member.avatar}.png?size=64` : null
+				},
+				footer: {
+
+					text: `Дата присоединения \ \ ${_member.joinDate.date}`
+				},
+				description: nicknames
+			} })
+		}
+	},
+
+
+
 	say: function() {
 
+		if (!this.message.member.hasPermission('KICK_MEMBERS')) return
 
 		let content = this.args.join(' ')
 		this.message.channel.send(content)
@@ -1088,6 +1143,8 @@ const Command = {
 
 
 	react: async function() {
+
+		if (!this.message.member.hasPermission('KICK_MEMBERS')) return
 
 		let id = this.args.shift()
 		let emoji = this.args.shift()
@@ -1105,58 +1162,9 @@ const Command = {
 
 
 
-	lovey: async function() {
-
-		let id = this.args.join('')
-
-		try {
-
-			let message = await this.message.channel.messages.fetch(id)
-			if (message) {
-
-				message.react('💛')
-			}
-
-		} catch { }
-	},
-
-
-
-	lover: async function() {
-
-		let id = this.args.join('')
-
-		try {
-
-			let message = await this.message.channel.messages.fetch(id)
-			if (message) {
-
-				message.react('❤')
-			}
-
-		} catch { }
-	},
-
-
-
-	loveb: async function() {
-
-		let id = this.args.join('')
-
-		try {
-
-			let message = await this.message.channel.messages.fetch(id)
-			if (message) {
-
-				message.react('💔')
-			}
-
-		} catch { }
-	},
-
-
-
 	clear: async function() {
+
+		if (!this.message.member.hasPermission('KICK_MEMBERS')) return
 
 		let id = this.args.join('')
 
@@ -1181,44 +1189,81 @@ const Command = {
 
 
 	/*
-		Reply Command
+		Jail
 	*/
 
 
 
-	Jail: async function(message, id, reason, notexist) {
+	get notexist() {
+
+		return [
+
+			'А это кто?',
+			'Не знаю кто это',
+			'Такого участника нет',
+			'Не могу найти такого участника',
+			'Я тупенькая и найти такого участника не могу'
+
+		].random
+	},
 
 
+
+	get cantjail() {
+
+		return [
+
+			'Ухади',
+			'Не буду',
+			'Не будь какашкой',
+			'Ты меня не заставишь',
+			'Я не могу этого сделать',
+			'Я не могу так поступить',
+			'Сейчас довыёбываешься и я заблокирую тебя'
+
+		].random
+	},
+
+
+
+	get fuckyou() {
+
+		return [
+
+			'А хуй тебе',
+			'Ты кто блять?',
+			'Да чёт мне лень',
+			'А чё ты ещё хочешь?',
+			'Любой каприз за ваш сасай',
+			'А нахуй бы тебе не пойти?',
+			'Баны отключены за неуплату',
+			'У тебя ещё банилка не выросла'
+
+		].random
+	},
+
+
+
+	jail: async function(message, id, reason, reply) {
+
+		if (!arguments.length) return
+
+		if (!message.member.hasPermission('KICK_MEMBERS'))
+		return reply ? message.reply(this.fuckyou) : null
 
 		let member = await Guild.member.get(id)
 		let _member = await Member.get(id)
 
-		if (!_member)
-		return message.reply(notexist)
-
-
-
-		// Отказать в блокировке, если участник на сервере и имеет те же права
-
 		if (member) {
-
-			// ADMINISTRATOR, BAN_MEMBERS, KICK_MEMBERS
 
 			if (member.hasPermission('KICK_MEMBERS')) {
 
-				return message.reply([
-
-					'Ухади',
-					'Не буду',
-					'Я не могу этого сделать',
-					'Я не могу так поступить',
-					'Не будь какашкой',
-					'Ты меня не заставишь',
-					'Сейчас довыёбываешься и я заблокирую тебя'
-
-				].random)
+				return reply ? message.reply(this.cantjail) : null
 			}
 		}
+
+		if (!_member)
+		return reply ? message.reply(this.notexist) : null
 
 
 
@@ -1228,6 +1273,8 @@ const Command = {
 
 			_member.ban = message.author.id
 			_member.reason = reason
+
+			joinRoleRemove(id)
 
 			Event.Jail(message.author, _member, reason)
 
@@ -1273,15 +1320,18 @@ const Command = {
 
 
 
-	unJail: async function(message, id, notexist) {
+	unjail: async function(message, id, reply) {
 
+		if (!arguments.length) return
 
+		if (!message.member.hasPermission('KICK_MEMBERS'))
+		return reply ? message.reply(this.fuckyou) : null
 
 		let member = await Guild.member.get(id)
 		let _member = await Member.get(id)
 
 		if (!_member)
-		return message.reply(notexist)
+		return reply ? message.reply(this.notexist) : null
 
 
 
@@ -1316,6 +1366,28 @@ const Command = {
 				roles.forEach(r => member.roles.add(r))
 			}
 		}
+	},
+
+
+
+	ban: async function() {
+
+		let id = this.args.shift()
+		id = id ? id.split(/\D/g).join('') : null
+
+		let reason = this.args.join(' ')
+
+		if (id) this.jail(this.message, id, reason)
+	},
+
+
+
+	unban: async function() {
+
+		let id = this.args.shift()
+		id = id ? id.split(/\D/g).join('') : null
+
+		if (id) this.unjail(this.message, id)
 	}
 }
 
@@ -1470,7 +1542,8 @@ let Pidor = {
 
 
 
-		if (['371199971099410435', '270862586688307200'].includes(this.message.author.id)) {
+		// if (['371199971099410435', '270862586688307200'].includes(this.message.author.id)) {
+		if (this.message.member.hasPermission('KICK_MEMBERS')) {
 
 			let Members = await Guild.members()
 

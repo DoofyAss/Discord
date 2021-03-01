@@ -44,7 +44,7 @@ const DataBase = {
 
 
 		/*
-			Login, Discriminator, Name - log
+			Login, Discriminator, Name, Avatar - log
 		*/
 
 		DB('discord.event').init({
@@ -135,6 +135,13 @@ const DataBase = {
 
 
 
+		events: async function(id) {
+
+			return await DB('discord.event', 'member', id).fetch()
+		},
+
+
+
 		all: async function() {
 
 			let member = await DB('discord.member', 'leftDate', null).fetch()
@@ -167,9 +174,30 @@ const DataBase = {
 			let memberData = {
 
 				id: member.user.id,
-				name: member.user.username.match(/^[а-яА-Я\w\s\-\.]*$/g) ? member.user.username : null, // для долбоёбов, у которых вместо логина всякая параша из разных символов
+
+				// для долбоёбов, у которых вместо логина параша из символов
+				name: member.user.username.match(/^[а-яА-Я\w\s\-\.\(\)]*$/g) ? member.user.username : null,
+
 				discriminator: member.user.discriminator,
+				nick: member.nickname,
 				avatar: member.user.avatar
+			}
+
+
+
+			// Создание данных
+
+			if (!result.length) {
+
+
+
+				return DB('discord.member')
+				.insert(Object.assign({
+
+					joinDate: member.joinedTimestamp,
+					roles: JSON.stringify(member._roles)
+
+				}, memberData))
 			}
 
 
@@ -180,18 +208,6 @@ const DataBase = {
 
 				let data = result.shift()
 
-
-
-				// История никнеймов
-				let nicknames = JSON.parse(data.nick ?? '[]')
-
-				// добавляем никнейм, если его нет в базе данных
-				if (!nicknames.includes(member.nickname))
-				nicknames.push(member.nickname)
-
-				// Текущий никнейм смещаем в начало
-				nicknames.sort((a, b) => a == member.nickname ? -1 : b == member.nickname ? 1 : 0)
-				nicknames = JSON.stringify(nicknames)
 
 
 				if (!data.ban) {
@@ -205,30 +221,76 @@ const DataBase = {
 
 
 
-				DB('discord.member', member.user.id)
-				.update(Object.assign({
-
-					nick: nicknames == '[null]' ? null : nicknames
-
-				}, memberData))
-			}
+				await DB('discord.member', member.user.id).update(memberData)
 
 
 
-			// Создание данных
+				// проверяю есть ли изменения логина, дискриминатора или никнейма, но не аватара
 
-			if (!result.length) {
+				let notchanged = [
+
+					data.name == memberData.name,
+					data.discriminator == memberData.discriminator,
+					data.nick == memberData.nick
+
+				].every(d => d == true)
+
+				if (notchanged) return
 
 
 
-				DB('discord.member')
-				.insert(Object.assign({
+				let events = await DB('discord.event', 'member', memberData.id).fetch()
 
-					joinDate: member.joinedTimestamp,
-					roles: JSON.stringify(member._roles),
-					nick: member.nickname ? JSON.stringify([member.nickname]) : null
+				// создаём данные со старыми и новыми записями
 
-				}, memberData))
+				if (!events.length) {
+
+
+
+					/*
+						Первичные данные, когда участник присоединился к серверу
+						Если участник никогда не менял логин, дискриминатор и никнейм, то записей в таблице не будет
+					*/
+
+					let eventData = {
+
+						member: member.user.id,
+						name: data.name,
+						discriminator: data.discriminator,
+						nick: null,
+						date: data.joinDate
+					}
+
+					events.push(eventData)
+
+					await DB('discord.event').insert(eventData)
+				}
+
+
+
+				// Добавляю запись, если нет совпадений
+
+				let found = events.some(e => [
+
+					e.name == memberData.name,
+					e.discriminator == memberData.discriminator,
+					e.nick == memberData.nick
+
+				].every(d => d == true))
+
+
+
+				if (!found) {
+
+					await DB('discord.event').insert({
+
+						member: member.user.id,
+						name: memberData.name,
+						discriminator: memberData.discriminator,
+						nick: memberData.nick,
+						date: Date.now()
+					})
+				}
 			}
 		},
 
@@ -238,7 +300,10 @@ const DataBase = {
 
 			let result = await DB('discord.member', member.user.id).fetch()
 
+
+
 			// если данных нет - новый участник
+
 			if (!result.length)
 			return this.save(member)
 
@@ -248,15 +313,10 @@ const DataBase = {
 
 				let data = result.shift()
 
-				// получаю историю никнеймов
-				let nicknames = JSON.parse(data.nick)
-
-				// возвращаю последний никнейм
-				if (nicknames) member.setNickname(nicknames.shift())
-
-
+				member.setNickname(data.nick)
 
 				// получаю сохранённые роли
+
 				let roles = JSON.parse(data.roles)
 				if (!data.ban) {
 
@@ -264,11 +324,13 @@ const DataBase = {
 					if (index > -1) roles.splice(index, 1)
 
 					// возвращаю все роли, кроме главной
+
 					roles.forEach(role => member.roles.add(role))
 
 				} else {
 
 					// если участник заблокирован
+
 					member.roles.add(config.rolePrison)
 				}
 
@@ -276,7 +338,9 @@ const DataBase = {
 
 				data = {
 
-					name: member.user.username.match(/^[а-яА-Я\w\s\-\.]*$/g) ? member.user.username : null, // для долбоёбов, у которых вместо логина всякая параша из разных символов
+					// для долбоёбов, у которых вместо логина параша из символов
+					name: member.user.username.match(/^[а-яА-Я\w\s\-\.\(\)]*$/g) ? member.user.username : null,
+
 					discriminator: member.user.discriminator,
 					avatar: member.user.avatar,
 					leftDate: null
