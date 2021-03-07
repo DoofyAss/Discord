@@ -665,6 +665,10 @@ client.on('message', async message => {
 
 
 
+		Antispam.try(message)
+
+
+
 		Reply(message)
 		Pidor.try(message)
 
@@ -679,7 +683,7 @@ client.on('message', async message => {
 		if ([
 
 			'786423732151123988', // cyberpunk
-			'796088083581370448', // мемасы
+			'816605463541973014', // 18
 
 		].includes(message.channel.id)) {
 
@@ -998,6 +1002,122 @@ const Reply = function(message) {
 
 
 /*
+	Antispam
+*/
+
+const Antispam = {
+
+	collection: {},
+
+	try: async function(message) {
+
+
+
+		let id = message.id
+		let author = message.author.id
+
+
+
+		if (this.ohyelLevel[author] == 3) {
+
+			if (message.content.toLowerCase().match(/извините|извини|извени|сорян|сори|прощение|извиняюсь|sorry|прости|простите/ug)) {
+
+				delete this.ohyelLevel[author]
+
+			} else {
+
+				if (!message.deleted) message.delete()
+			}
+
+			return
+		}
+
+
+
+		if (!this.collection.hasOwnProperty(author))
+		this.collection[author] = []
+
+		this.collection[author].push(message)
+
+		if (this.collection[author].length > 2) {
+			this.collection[author].forEach(message => { message.del = true })
+		}
+
+
+
+		setTimeout(() => {
+
+			let index = this.collection[author].map(m => m.id).indexOf(id)
+
+			let message = this.collection[author][index]
+			let length = this.collection[author].length
+
+			if (message.del) {
+
+				if (length < 2) this.ohyel(message)
+				if (!message.deleted) message.delete()
+			}
+
+			if (index > -1) this.collection[author].splice(index, 1)
+
+		}, 1500)
+	},
+
+
+
+	ohyelLevel: {},
+
+	get replys() {
+
+		return [
+
+			'тебе въебать?',
+			'охуеваешь на глазах',
+			'последствий хочешь?',
+			'последнее предупреждение',
+			'а жареных гвоздей не хочешь?'
+
+		].random
+	},
+
+	ohyel: async function(message) {
+
+
+
+		let author = message.author.id
+
+
+
+		if (this.ohyelLevel[author] == 2) {
+
+			message.reply('буду удалять все твои сообщения, пока не извинишься')
+			this.ohyelLevel[author] = 3
+		}
+
+		if (this.ohyelLevel[author] == 1) {
+
+			message.reply(this.replys)
+			this.ohyelLevel[author] = 2
+		}
+
+		if (!this.ohyelLevel[author]) {
+
+			message.reply('не спамь!').then(m => m.delete({ timeout: 5000 }))
+			this.ohyelLevel[author] = 1
+		}
+	}
+}
+
+
+
+
+
+
+
+
+
+
+/*
 	Command
 */
 
@@ -1064,7 +1184,6 @@ const Command = {
 
 		usernames = [...new Set(usernames)].join('\n')
 
-
 		// server member
 
 		let member = Guild.member.get(id)
@@ -1081,7 +1200,7 @@ const Command = {
 				fields: [
 					{
 						name: 'Имена',
-						value: usernames,
+						value: usernames ? usernames : '[отсутствуют]',
 						inline: true
 					},
 					{
@@ -1091,7 +1210,7 @@ const Command = {
 					},
 					{
 						name: '\u200B',
-						value: nicknames,
+						value: nicknames ? nicknames : '[отсутствуют]',
 						inline: true
 					},
 					{
@@ -1099,6 +1218,7 @@ const Command = {
 						value: member.joinedTimestamp.date,
 						inline: true
 					}
+
 				],
 				footer: {
 
@@ -1177,6 +1297,52 @@ const Command = {
 			}
 
 		} catch { }
+	},
+
+
+
+	c: async function() {
+
+		if (!this.message.member.hasPermission('MANAGE_MESSAGES')) return
+
+		await new Promise(resolve => setTimeout(resolve, 2000))
+
+
+		let lastMessages = await this.message.channel.messages.fetch({ limit: 50, cache: false })
+
+
+
+		// clear member messages
+
+		if (this.args.length == 2) {
+
+
+
+			let id = this.args.shift()
+			let count = this.args.shift()
+
+			id = id ? id.split(/\D/g).join('') : null
+
+
+
+			let messages = []
+			lastMessages.filter(m => m.author.id == id)
+			.forEach(m => messages.length < count ? messages.push(m) : null)
+
+			messages.forEach(m => { if (!m.deleted) m.delete() })
+		}
+
+		// clear last messages
+
+		if (this.args.length == 1) {
+
+			let count = this.args.shift()
+
+			let messages = []
+			lastMessages.forEach(m => messages.length < count ? messages.push(m) : null)
+
+			messages.forEach(m => { if (!m.deleted) m.delete() })
+		}
 	},
 
 
