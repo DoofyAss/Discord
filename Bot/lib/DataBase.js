@@ -55,6 +55,10 @@ class DataBase {
 				return value ? value : 'null'
 			break
 
+			case 'number':
+				return value
+			break
+
 			case 'string':
 				return `'${ value }'`
 			break

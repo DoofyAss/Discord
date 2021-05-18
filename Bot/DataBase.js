@@ -61,17 +61,57 @@ const DataBase = {
 
 
 
+		/*
+			Private channels
+		*/
+
+		DB('discord.private').init({
+
+			id: column.integer.increment,
+			channel: column.varchar.null,
+			member: column.varchar.null,
+			type: column.integer.null
+		})
+
+		.catch(console.log)
+
+
+
+		/*
+			Music playlist
+		*/
+
 		DB('discord.music').init({
 
 			id: column.integer.increment,
-			message: column.varchar,
-			member: column.varchar.null,
-			name: column.varchar.null,
+			playlist: column.varchar, // message ID
 			link: column.varchar,
+			name: column.varchar.null,
+			member: column.varchar.null,
 			cur: column.integer.null
 		})
 
 		.catch(console.log)
+	},
+
+
+
+	private: {
+
+		add: async function(data) {
+
+			return await DB('discord.private').insert(data)
+		},
+
+		get: async function(member, type) {
+
+			return await DB('discord.private').where('member', member).and('type', type).fetch()
+		},
+
+		remove: async function(id) {
+
+			return await DB('discord.private', 'channel', id).delete()
+		},
 	},
 
 

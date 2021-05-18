@@ -5,8 +5,11 @@ const { lib } = require('./lib/lib.js')
 const { DataBase, DB } = require('./DataBase')
 const { server, channel, role, config } = require('./config')
 
-const { Client } = require('discord.js')
-const client = new Client({ partials: ['MESSAGE', 'CHANNEL', 'REACTION'] })
+// const { Client } = require('discord.js')
+// const client = new Client({ partials: ['MESSAGE', 'CHANNEL', 'REACTION'] })
+
+const Discord = require('discord.js')
+const client = new Discord.Client({ ws: { intents: new Discord.Intents(Discord.Intents.ALL) }})
 
 const ytdl = require('ytdl-core')
 
@@ -680,6 +683,14 @@ client.on('message', async message => {
 
 
 
+		if (message.channel.id == channel.chat) {
+
+			if (message.attachments.map(a => a.attachment).length)
+			message.react('💛')
+		}
+
+
+
 		if ([
 
 			'786423732151123988', // cyberpunk
@@ -1160,6 +1171,128 @@ const Command = {
 
 
 
+	// private text
+
+	pt: async function() {
+
+		this.private(0)
+	},
+
+
+
+	// private voice
+
+	pv: async function() {
+
+		this.private(1)
+	},
+
+
+
+	private: async function(type) {
+
+
+
+		if (!arguments.length) return
+
+		/*
+			перевожу аргументы в ID участников и ролей
+		*/
+
+		let members = this.args.map(a => {
+
+			let id = a.split(/\D/g).join('')
+
+			if (!Guild.member.get(id) && !Guild.role.get(id)) return
+			if (id == this.message.author.id) return
+
+			return { id: id, allow: type ? 36701696 : 68608 }
+
+		}).filter(id => !!id) // clear undefined, null and ''
+
+
+
+		/*
+			удаляю каналы, которые есть в базе, но нет на сервере
+		*/
+
+		let private = await DataBase.private.get(this.message.author.id, type)
+
+		await Promise.all(private.map(async (p, index) => {
+
+			if (!Guild.channel.get(p.channel)) {
+
+				await DataBase.private.remove(p.channel)
+				private.splice(index, 1)
+			}
+		}))
+
+
+
+		let category = Guild.channel.get(channel.private)
+		if (category) {
+
+
+
+			let everyone = category.permissionOverwrites.values().next().value
+
+
+
+			/*
+				хуй знает что это такое
+			*/
+
+			if (private.length) {
+
+				let chan = Guild.channel.get(private.shift().channel)
+				if (chan) {
+
+					chan.overwritePermissions([
+
+						everyone,
+						{
+							id: this.message.author.id,
+							allow: type ? 334497552 : 268512272
+						}
+
+					].concat(members))
+				}
+
+				return
+			}
+
+
+
+			/*
+				создаю канал, если его нет
+			*/
+
+			Guild.cache.channels.create(this.message.author.discriminator, type ? { type: 'voice', bitrate: 96000 } : { type: 'text' })
+			.then(c => {
+
+				c.setParent(category.id)
+				.then(c => c.overwritePermissions([
+
+					everyone,
+					{
+						id: this.message.author.id,
+						allow: type ? 334497552 : 268512272
+					}
+
+				].concat(members)))
+
+				DataBase.private.add({
+
+					channel: c.id,
+					member: this.message.author.id,
+					type: type
+				})
+			})
+		}
+	},
+
+
+
 	info: async function() {
 
 
@@ -1308,7 +1441,7 @@ const Command = {
 		await new Promise(resolve => setTimeout(resolve, 2000))
 
 
-		let lastMessages = await this.message.channel.messages.fetch({ limit: 50, cache: false })
+		let lastMessages = await this.message.channel.messages.fetch({ limit: 32, cache: false })
 
 
 
@@ -1327,7 +1460,7 @@ const Command = {
 
 			let messages = []
 			lastMessages.filter(m => m.author.id == id)
-			.forEach(m => messages.length < count ? messages.push(m) : null)
+			.forEach(m => messages.length < count && !m.deleted ? messages.push(m) : null)
 
 			messages.forEach(m => { if (!m.deleted) m.delete() })
 		}
@@ -1339,7 +1472,7 @@ const Command = {
 			let count = this.args.shift()
 
 			let messages = []
-			lastMessages.forEach(m => messages.length < count ? messages.push(m) : null)
+			lastMessages.forEach(m => messages.length < count && !m.deleted ? messages.push(m) : null)
 
 			messages.forEach(m => { if (!m.deleted) m.delete() })
 		}
@@ -1652,7 +1785,7 @@ let Pidor = {
 
 
 
-		if (this.content.match(/[\w+]* для пидоров|[\w+]* для пидарасов|жопотрах|гей|педик|пидор|пидрила|пидарюга|гомосек|гомик|глиномес|говномес|голубой|гомодрил|лезбиянка|лезбуха|лезба/ug))
+		if (this.content.match(/[\w+]* для пидоров|[\w+]* для пидарасов|жопоеб|жопоёб|жопотрах|гей|педик|пидор|пидрила|пидарюга|гомосек|гомик|глиномес|говномес|голубой|гомодрил|лезбиянка|лезбуха|лезба/ug))
 		this.message.react(['🏳️‍🌈', '🌈'].random)
 
 
@@ -1667,7 +1800,7 @@ let Pidor = {
 
 
 
-		if (lib.random(100) < 3) this.for()
+		if (lib.random(128, 1024) / 8 * lib.random(1, 16) < 100) this.for()
 	},
 
 
