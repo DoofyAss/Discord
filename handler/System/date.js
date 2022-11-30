@@ -20,6 +20,66 @@ String.prototype.time = function(format) {
 
 
 
+let past = {
+
+	get: function() {
+
+		return this.time() < $.time()
+	}
+}
+
+Object.defineProperty(Number.prototype, 'past', past)
+Object.defineProperty(String.prototype, 'past', past)
+
+
+
+let left = {
+
+	get: function() {
+
+		let now = $.time()
+		let timestamp = this.time()
+
+		let seconds = timestamp > now ? timestamp - now : now - timestamp
+
+
+
+		let d = Math.floor(seconds / 86400)
+		let sec = Math.floor(seconds - d * 86400)
+
+		let h = Math.floor(sec / 60 / 60)
+		let m = Math.floor(sec / 60 - h * 60)
+		let s = Math.floor(sec % 60)
+
+
+
+		let date = []
+
+		if (d > 0) {
+
+			if (d > 0) date.push(`${d} д`)
+			if (h > 0) date.push(`${h} ч`)
+
+		} else if (h > 0) {
+
+			if (h > 0) date.push(`${h} ч`)
+			if (m > 0) date.push(`${m} мин`)
+
+		} else {
+
+			if (m > 0) date.push(`${m} мин`)
+			if (s > 0) date.push(`${s} сек`)
+		}
+
+		return date.join(' ')
+	}
+}
+
+Object.defineProperty(Number.prototype, 'left', left)
+Object.defineProperty(String.prototype, 'left', left)
+
+
+
 
 
 
@@ -35,11 +95,11 @@ function timeFormat(timestamp, format) {
 
 	let absolute = Math.abs(timestamp - t) > Math.abs(timestamp - t * 1000)
 
-	let seconds = absolute ? parseInt(timestamp / 1000) : timestamp
+	let seconds = absolute ? parseInt(timestamp / 1000) : parseInt(timestamp)
 
 	if (! format) return seconds
 
-	let milliseconds = ! absolute ? parseInt(timestamp * 1000) : timestamp
+	let milliseconds = ! absolute ? parseInt(timestamp * 1000) : parseInt(timestamp)
 
 
 
@@ -81,8 +141,8 @@ function timeFormat(timestamp, format) {
 	.replace('m', locale({ minute: '2-digit' }))
 	.replace('s', locale({ second: '2-digit' }))
 
-	.replace('W', date.toLocaleString('ru', { weekday: 'long' }).fU)
-	.replace('MO', date.toLocaleString('ru', { month: 'long' }).fU)
+	.replace('W', date.toLocaleString('ru', { weekday: 'long' }).tU)
+	.replace('MO', date.toLocaleString('ru', { month: 'long' }).tU)
 
 	.replace('D', locale({ day: '2-digit' }))
 	.replace('M', locale({ month: '2-digit' }))

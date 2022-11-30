@@ -5,7 +5,7 @@
 	first char to uppercase
 */
 
-Object.defineProperty(String.prototype, 'fU', {
+Object.defineProperty(String.prototype, 'tU', {
 
     get: function() {
 
@@ -19,7 +19,7 @@ Object.defineProperty(String.prototype, 'fU', {
 	first char to lowercase
 */
 
-Object.defineProperty(String.prototype, 'fL', {
+Object.defineProperty(String.prototype, 'tL', {
 
     get: function() {
 
