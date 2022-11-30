@@ -14,6 +14,30 @@ $.random(max) // 0, max
 
 
 /*
+	Map, Array, Object
+*/
+
+['a', 'b', 'c'].random
+['a', 'b', 'c'].first // 'a'
+
+[].null // null
+['a'].null // ['a']
+
+[].empty // true
+{}.empty // true
+
+Map.array // convert Map to Array
+
+{}.map((key, value) => {})
+{}.filter((key, value) => {})
+
+Map.each((value, key, map) => {})
+Array.each((value, index, arr) => {})
+Object.each((key, value, object) => {})
+
+
+
+/*
 	Date, Timestamp
 
 	h: hour
