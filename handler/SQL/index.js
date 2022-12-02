@@ -1,7 +1,7 @@
 
 
 
-global.DB = function DB(space, ...arg) {
+$(global.DB = function DB(space, ...arg) {
 
 	if (arg.length == 2)
 	return new SQL(space).and(arg[0], arg[1])
@@ -10,11 +10,11 @@ global.DB = function DB(space, ...arg) {
 	return new SQL(space).and('id', arg[0])
 
 	return new SQL(space)
-}
+})
 
 
 
-$(DB).add(async function query(request) {
+.add(async function query(request) {
 
 	return await new SQL().query(request)
 })

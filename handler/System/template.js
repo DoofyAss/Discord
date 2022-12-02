@@ -71,3 +71,27 @@ timestamp.time('midnight') // timestamp of 00:00:00 30.11.2022
 
 timestamp.past // timestamp < now
 timestamp.left // 1 h 30 min
+
+
+
+/*
+	Timer
+*/
+
+let timer = Timer({ id: 'anchor', member: 'id' }) // find or create
+
+timer.start(2000, function onEnd() {})
+timer.restart(duration, callback) // optional args
+timer.destroy()
+
+timer.remain // ms left
+timer.left // remain format
+
+timer.push({ channel: 64 })
+timer.data.channel // 64
+
+Timer.find({ id: 'anchor', member: 'id' })
+Timer.remain({ id: 'anchor', member: 'id' })
+Timer.restart({ id: 'anchor', member: 'id' })
+Timer.destroy({ id: 'anchor', member: 'id' })
+Timer.filter({ id: 'anchor' })

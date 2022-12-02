@@ -85,6 +85,8 @@ class COLUMN {
 
 $(DB)
 
+
+
 .get(function increment() {
 
 	return new COLUMN({ TYPE: 'int', INCREMENT: 'AUTO_INCREMENT' })
@@ -148,7 +150,11 @@ $(DB)
 
 
 
-$(SQL.prototype).add(async function init(struct) {
+$(SQL.prototype)
+
+
+
+.add(async function init(struct) {
 
 	let primary = []
 
@@ -160,23 +166,22 @@ $(SQL.prototype).add(async function init(struct) {
 		return struct[name].join(name)
 	})
 
-	await this.query(`CREATE DATABASE IF NOT EXISTS ${ this.BASE } ${ COLUMN.COLLATE }`)
+	let res = await this.query(`CREATE DATABASE IF NOT EXISTS ${ this.BASE } ${ COLUMN.COLLATE }`)
 
-	await this.query(`CREATE TABLE IF NOT EXISTS ${ this.SPACE } (${ columns.concat(primary).join(', ') }) ENGINE = MyISAM ${ COLUMN.COLLATE }`)
+	if (! res.warningCount)
+	console.warn( `CREATE DATABASE ${ this.BASE }` )
+
+	res = await this.query(`CREATE TABLE IF NOT EXISTS ${ this.SPACE } (${ columns.concat(primary).join(', ') }) ENGINE = MyISAM ${ COLUMN.COLLATE }`)
+
+	if (! res.warningCount)
+	console.warn( `CREATE TABLE ${ this.SPACE }` )
 
 	await this.alter(struct)
 })
 
 
 
-
-
-
-
-
-
-
-$(SQL.prototype).add(async function alter(struct, data = []) {
+.add(async function alter(struct, data = []) {
 
 
 
@@ -249,7 +254,6 @@ $(SQL.prototype).add(async function alter(struct, data = []) {
 
 		await this.query( sql.join(', ') )
 	}
-
 
 
 
