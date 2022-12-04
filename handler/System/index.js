@@ -35,8 +35,8 @@ class System {
 
 		let [ name, fn ] = b ? [ a, b ] : [ a.name, a ]
 
-		if (fn instanceof Function && name)
-		Object.defineProperty(this.object, name, { get: fn })
+		Object.defineProperty(this.object, name,
+		fn instanceof Function ? { get: fn } : { get: () => fn })
 
 		return this
 	}
@@ -52,6 +52,21 @@ class System {
 
 
 $($)
+
+
+
+.add(function size(bytes, decimal = 2) {
+
+	if (! bytes) return '0 Bytes'
+
+	const k = 1024 // 1000 for bits
+	const s = ['Bytes', 'KB', 'MB', 'GB', 'TB']
+	const d = decimal < 0 ? 0 : decimal
+
+	const i = Math.floor( Math.log(bytes) / Math.log(k) )
+
+	return parseFloat((bytes / Math.pow(k, i)).toFixed(d)) + ` ${ s[i] }`
+})
 
 
 
