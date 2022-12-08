@@ -89,3 +89,21 @@ require('./console')
 require('./common')
 require('./timer')
 require('./date')
+
+
+
+
+
+
+
+
+
+
+process.argv.filter(arg => arg.startsWith('--')).forEach(string => {
+
+	let index = process.argv.indexOf(string)
+	let value = index > -1 ? process.argv[index + 1] : null
+
+	if (value)
+	$[string.replace('--', '__')] = value
+})

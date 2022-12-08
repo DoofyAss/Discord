@@ -1,5 +1,6 @@
 
 
+
 global.client = Object.assign(global.client || {})
 
 
@@ -8,7 +9,20 @@ $(client)
 
 
 
+.get('guild', client.guilds.cache.get($.__guild))
+
+
+
+
+
+
+
+
+
+
 .add(function info() {
+
+	let start = $.time()
 
 	setInterval(() => {
 
@@ -17,7 +31,7 @@ $(client)
 		let data = [
 
 			client.user ?. username || 'Bot',
-			$.time('long'),
+			start.left,
 			$.size(memory.heapUsed)
 		]
 
@@ -37,20 +51,18 @@ $(client)
 
 .add(function scan(folder, collection = []) {
 
-	folder = path.join(require.main.path, folder)
 
 
+	const put = (mod, dir) => {
 
-	const put = (module, dir) => {
+		let name = (dir || mod).split(path.sep).pop()
 
-		let name = (dir || module)
-		.split(path.sep).pop()
-
-		collection.push({ name: name, path: module })
+		collection.push({ name: name, path: mod })
 	}
 
 
 
+	fs.existsSync(folder) &&
 	fs.readdirSync(folder).forEach(dir => {
 
 		let tmp = path.join(folder, dir)
@@ -64,5 +76,68 @@ $(client)
 		if (tmp.endsWith('.js')) put(tmp)
 	})
 
+
+
 	return collection
 })
+
+
+
+
+
+
+
+
+
+
+.add(async function include(folder) {
+
+	folder = path.join(require.main.path, folder)
+
+	client.scan(folder).each(mod => {
+
+		console.dir(`module { \x1b[33m${ mod.name }\x1b[37m }`)
+
+		require(mod.path).each((name, context) => {
+
+			global[name] = global[name] ?
+			Object.assign( global[name], context ) : context
+		})
+	})
+})
+
+
+
+
+
+
+
+
+
+
+global.emoji = {
+
+	get positive() { return [ '😀', '😇', '😉', '😏', '🤓', '😎' ].random },
+	get negative() { return [ '😠', '😒', '😬', '🤨', '😤' ].random },
+	get neutral() { return [ '😐', '🙄', '😵‍💫', '😶‍🌫️', '🤥' ].random },
+	get sad() { return [ '😦', '😕', '🥺', '🤕', '😖', '😭' ].random }
+}
+
+
+
+global.color = {
+
+	red: 0xdd2e44,
+	blue: 0x00a6f5,
+	green: 0x2ecc71,
+	yellow: 0xfdcb58,
+
+	gray: 0x2f3136,
+
+	join: 0x8c9dff,
+	boost: 0xff73fa
+}
+
+
+
+require('./application')

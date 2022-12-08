@@ -5,6 +5,16 @@
 	Common
 */
 
+
+
+global.wait = async function(sec) {
+
+	return await new Promise(resolve =>
+	setTimeout(resolve, sec))
+}
+
+
+
 $(String.prototype)
 
 // first char to uppercase
