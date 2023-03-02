@@ -95,7 +95,7 @@ class TIMER {
 
 	start(duration, callback) {
 
-		if (this.remain) return
+		if (this.remain) return this
 
 		duration && (this.duration = duration)
 		callback && (this.callback = callback)

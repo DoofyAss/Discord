@@ -3,8 +3,6 @@
 
 $(global.application = async function application(interaction) {
 
-	if (! interaction.isCommand()) return
-
 
 
 	interaction.forceReply = async function (options, timeout) {
@@ -18,48 +16,19 @@ $(global.application = async function application(interaction) {
 
 
 
-	let command = application.command(interaction)
+	if (interaction.isCommand())
+	return await application.command(interaction)
 
 
 
-	if (! command)
-	return await application.reply.undefined(interaction)
-
-	if (! command.thread)
-	return await application.reply.undefined(interaction, command)
-
-	if (command.permission)
-	return await application.reply.permission(interaction, command)
-
-	if (command.cooldown)
-	return await application.reply.cooldown(interaction, command)
-
-
-
-	let arguments = {
-
-		interaction: interaction,
-		member: interaction.member,
-		channel: interaction.channel,
-		option: application.options(interaction),
-
-		group: (...string) => string
-		.map(s => s == interaction.options._group).some(Boolean),
-
-		subcommand: (...string) => string
-		.map(s => s == interaction.options._subcommand).some(Boolean),
-	}
-
-
-
-	command.thread.call(arguments)
-	.then(() => application.reply.complete(interaction))
-	.catch(e => application.reply.complete(interaction, e))
+	if (interaction.isMessageComponent())
+	return await application.component(interaction)
 })
 
 
 
-.get('list', [])
+.get('commands', [])
+.get('components', [])
 
 
 
@@ -72,7 +41,7 @@ $(global.application = async function application(interaction) {
 
 .add(async function update() {
 
-	/*let commands = this.list.map(command =>
+	/*let commands = this.commands.map(command =>
 
 		(command.type ?
 
@@ -86,7 +55,7 @@ $(global.application = async function application(interaction) {
 		)
 	)*/
 
-	await client.application.commands.set(this.list)
+	await client.application.commands.set(this.commands)
 })
 
 
@@ -98,13 +67,13 @@ $(global.application = async function application(interaction) {
 
 
 
-.add(async function include(folder) {
+.add(async function include(array, folder) {
 
 	folder = path.join(require.main.path, folder)
 
 	client.scan(folder).each(command => {
 
-		let put = command => this.list.push(command)
+		let put = command => array.push(command)
 
 		let ctx = require(command.path)
 
@@ -117,7 +86,12 @@ $(global.application = async function application(interaction) {
 
 
 
+
+
+
+
 require('./command')
+require('./component')
 require('./permission')
 require('./cooldown')
 require('./options')

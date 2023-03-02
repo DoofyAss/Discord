@@ -5,11 +5,12 @@ $(application)
 
 
 
-.add(function command(interaction) {
+.add(async function command(interaction) {
 
-	let root = this.list.find(c => c.name == interaction.commandName)
+	let root = this.commands.find(c => c.name == interaction.commandName)
 
-	if (! root) return
+	if (! root)
+	return await application.reply.undefined(interaction)
 
 
 
@@ -33,19 +34,51 @@ $(application)
 
 	let command = this.search([root], name)
 
-	if (! command) return
+	if (! command)
+	return await application.reply.undefined(interaction)
 
 	let access = this.access(command || [])
 
-
-
-	return {
+	command = {
 
 		name,
 		thread,
 		cooldown: this.cooldown(access, interaction.member),
 		permission: this.permission(access, interaction.member)
 	}
+
+
+
+	if (! command.thread)
+	return await application.reply.undefined(interaction, command)
+
+	if (command.permission)
+	return await application.reply.permission(interaction, command)
+
+	if (command.cooldown)
+	return await application.reply.cooldown(interaction, command)
+
+
+
+	let arguments = {
+
+		interaction: interaction,
+		member: interaction.member,
+		channel: interaction.channel,
+		option: application.options(interaction),
+
+		group: (...string) => string
+		.map(s => s == interaction.options._group).some(Boolean),
+
+		subcommand: (...string) => string
+		.map(s => s == interaction.options._subcommand).some(Boolean),
+	}
+
+
+
+	command.thread.call(arguments)
+	.then(() => application.reply.complete(interaction))
+	.catch(e => application.reply.complete(interaction, e))
 })
 
 

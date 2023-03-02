@@ -16,10 +16,12 @@ global.client = new Client({ intents: 3276799, partials: [ 0, 1, 2, 3, 4, 5, 6 ]
 require('../handler')(async () => {
 
 	client.include('modules')
-	application.include('commands')
+
+	application.include(application.commands, 'commands')
+	application.include(application.components, 'components')
 
 	client.info()
-	client.login(require('./token'))
+	client.login($.__token)
 })
 
 

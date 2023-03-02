@@ -2,6 +2,7 @@
 
 
 global.client = Object.assign(global.client || {})
+global.config = require.main.require('./config')
 
 
 
@@ -9,7 +10,10 @@ $(client)
 
 
 
-.get('guild', client.guilds.cache.get($.__guild))
+.get(function guild() {
+
+	return client.guilds.cache.get(config.guild)
+})
 
 
 

@@ -5,9 +5,37 @@ $(application.reply = {})
 
 
 
+.add(async function disabled(interaction) {
+
+	await interaction.forceReply({
+
+		ephemeral: true,
+		content: null,
+		embeds: [{
+
+			color: color.red,
+			description: [
+
+				`Компонент не найден или отключён`, emoji.sad
+
+			].join(' \u200b ')
+		}]
+
+	})
+})
+
+
+
+
+
+
+
+
+
+
 .add(async function undefined(interaction, command) {
 
-	name = command.name || interaction.commandName
+	name = command?.name || interaction.commandName
 
 	await interaction.forceReply({
 
@@ -38,7 +66,7 @@ $(application.reply = {})
 
 .add(async function permission(interaction, command) {
 
-	name = command.name || interaction.commandName
+	name = command?.name || interaction.commandName
 
 	await interaction.forceReply({
 
@@ -75,7 +103,7 @@ $(application.reply = {})
 
 .add(async function cooldown(interaction, command) {
 
-	name = command.name || interaction.commandName
+	name = command?.name || interaction.commandName
 
 	await interaction.forceReply({
 
@@ -93,6 +121,71 @@ $(application.reply = {})
 		}]
 
 	})
+})
+
+
+
+
+
+
+
+
+
+
+.add(async function chill(interaction, left) {
+
+	await interaction.forceReply({
+
+		ephemeral: true,
+		content: null,
+		embeds: [{
+
+			color: color.red,
+			description: [
+
+				`Компонент перезаряжается`, emoji.sad, left
+
+			].join(' \u200b ')
+		}]
+
+	})
+})
+
+
+
+
+
+
+
+
+
+
+.add(async function component(interaction, exception) {
+
+
+
+	if (exception) {
+
+		console.err('component error')
+		console.log(exception)
+
+		return await interaction.forceReply({
+
+			ephemeral: true,
+			content: null,
+			embeds: [{
+
+				color: color.red,
+				description: `Ошибка при выполнении \u200b ${ emoji.sad }`
+			}]
+
+		}, 3000)
+	}
+
+
+
+	if (! interaction.replied)
+	await interaction.deferUpdate()
 })
 
 
