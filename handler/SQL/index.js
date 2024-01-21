@@ -59,7 +59,7 @@ global.SQL = class SQL {
 
 			case null:
 			case undefined:
-			return null
+			return 'null'
 		}
 
 

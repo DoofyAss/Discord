@@ -28,7 +28,7 @@ $(application)
 	if (! thread)
 	return await application.reply.disabled(interaction)
 
-	await thread.call(interaction, interaction)
+	thread.call(interaction, interaction)
 	.then(() => application.reply.component(interaction))
 	.catch(async (e) => await application.reply.component(interaction, e))
 })

@@ -20,6 +20,12 @@ $.random(max) // 0, max
 ['a', 'b', 'c'].random
 ['a', 'b', 'c'].first // 'a'
 
+['a', 'b', 'c'].remove(['a', 'b']) // ['c']
+['a', 'b', 'c'].remove('c') // ['a', 'b']
+
+['a', 'b', 'c'].should(false, 'c') // ['a', 'b']
+['a', 'b', 'c'].should(true, 'f') // ['a', 'b', 'c', 'f']
+
 [].null // null
 ['a'].null // ['a']
 

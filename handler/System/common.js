@@ -114,6 +114,34 @@ $(Array.prototype)
 
 
 
+.add(function remove(i) {
+
+	let remove = i => {
+
+		let index = this.indexOf(i)
+		if (index > -1) this.splice(index, 1)
+	}
+
+	i instanceof Array ? i.forEach(i => remove(i)) : remove(i)
+
+	return this
+})
+
+
+
+.add(function should(condition, value) {
+
+	if (condition && ! this.includes(value))
+	this.push(value)
+
+	if (! condition && this.includes(value))
+	this.remove(value)
+
+	return this
+})
+
+
+
 
 
 
