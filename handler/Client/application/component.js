@@ -11,7 +11,7 @@ $(application)
 
 	let id = interaction.customId
 
-	let root = this.components.find(c => c.name == id || c.name.includes(id))
+	let root = this.components.find(c => c ?. name == id || c ?. name ?. includes(id))
 
 	if (! root)
 	return await application.reply.disabled(interaction)

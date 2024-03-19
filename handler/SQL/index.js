@@ -1,6 +1,10 @@
 
 
 
+global.DataBase = {}
+
+
+
 $(global.DB = function DB(space, ...arg) {
 
 	if (arg.length == 2)

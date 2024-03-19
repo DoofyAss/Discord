@@ -24,6 +24,29 @@ $(client)
 
 
 
+.get(function roles() {
+
+	return {
+
+		everyone: client.guild.roles.everyone,
+
+		boost: client.guild.roles.cache
+		.find(r => r.tags?.premiumSubscriberRole) || {},
+
+		member: client.guild.roles.cache
+		.filter(r => (!r.tags || r.tags.empty) && r.id != this.id)
+	}
+})
+
+
+
+
+
+
+
+
+
+
 .add(function info() {
 
 	let start = $.time()
@@ -41,7 +64,7 @@ $(client)
 
 		process.title = data.join('   -   ')
 
-	}, 1000)
+	}, 5000)
 })
 
 
@@ -136,7 +159,7 @@ global.color = {
 	green: 0x2ecc71,
 	yellow: 0xfdcb58,
 
-	gray: 0x2f3136,
+	gray: 0x2b2d31,
 
 	join: 0x8c9dff,
 	boost: 0xff73fa
