@@ -3,6 +3,8 @@
 
 const Embed = {
 
+
+
 	choose: {
 
 		ephemeral: true,
@@ -23,14 +25,14 @@ const Embed = {
 					style: 2,
 					label: '\u200b \u200b Парень',
 					custom_id: 'choose_male',
-					emoji: '🍌'
+					emoji: '1221260906827087953'
 				},
 				{
 					type: 2,
 					style: 2,
 					label: '\u200b \u200b Девушка',
 					custom_id: 'choose_female',
-					emoji: '🍓'
+					emoji: '1221260896463093861'
 				}
 			]
 		}]
@@ -47,7 +49,7 @@ const Embed = {
 			embeds: [{
 
 				color: color.red,
-				description: 'Роль нельзя будет изменить'
+				description: 'Роль нельзя будет изменить \u200b <:role_Male:1221259930829459619>'
 			}],
 
 			components: [{
@@ -59,7 +61,7 @@ const Embed = {
 						type: 2,
 						style: 4,
 						label: 'Да, я парень',
-						custom_id: 'confirm_male',
+						custom_id: 'confirm_male'
 					}
 				]
 			}]
@@ -72,7 +74,7 @@ const Embed = {
 			embeds: [{
 
 				color: color.red,
-				description: 'Роль нельзя будет изменить'
+				description: 'Роль нельзя будет изменить \u200b <:role_Female:1221259929428561991>'
 			}],
 
 			components: [{
@@ -177,7 +179,7 @@ module.exports = [
 			embeds: [{
 
 				color: client.guild.roles.cache.get(config.roles.male).color,
-				description: `Мужская роль выдана`
+				description: `Роль выдана \u200b <:role_Male:1221259930829459619>`
 			}],
 			components: []
 		})
@@ -203,7 +205,7 @@ module.exports = [
 			embeds: [{
 
 				color: client.guild.roles.cache.get(config.roles.female).color,
-				description: `Женская роль выдана`
+				description: `Роль выдана \u200b <:role_Female:1221259929428561991>`
 			}],
 			components: []
 		})

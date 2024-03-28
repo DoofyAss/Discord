@@ -2,7 +2,7 @@
 
 
 global.client = Object.assign(global.client || {})
-global.config = require.main.require('./config')
+global.config = require.main.require('../handler/config')
 
 
 
@@ -123,7 +123,10 @@ $(client)
 
 	client.scan(folder).each(mod => {
 
-		console.dir(`module { \x1b[33m${ mod.name }\x1b[37m }`)
+		if (mod.name.startsWith('~')) // skip
+		return console.dir(`module { \x1b[90m${ mod.name }\x1b[37m }`)
+
+		console.dir(`module { \x1b[36m${ mod.name }\x1b[37m }`)
 
 		require(mod.path).each((name, context) => {
 
@@ -167,4 +170,5 @@ global.color = {
 
 
 
+require('./api')
 require('./application')

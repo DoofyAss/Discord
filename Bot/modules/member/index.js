@@ -165,6 +165,8 @@ client.on('guildMemberVerify', async id => {
 
 client.on('ready', async () => {
 
+	return
+
 	let newbie = config.roles.newbie
 
 
