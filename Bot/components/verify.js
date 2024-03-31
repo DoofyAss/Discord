@@ -1,48 +1,90 @@
 
 
 
-const Embed = {
+const check = async interaction => {
+
+	let already = interaction.member._roles.some(r =>
+	[ config.roles.male, config.roles.female ].includes(r))
+
+	if (already) {
+
+		await interaction.reply({
+
+			ephemeral: true,
+			embeds: [{
+
+				color: color.gray,
+				description: `Вы уже верифицированы \u200b ${ emoji.positive }`
+			}]
+		})
+
+		return true
+	}
+}
 
 
 
-	choose: {
-
-		ephemeral: true,
-
-		embeds: [{
-
-			color: color.gray,
-			description: 'Для полного доступа к серверу выберите пол'
-		}],
-
-		components: [{
-
-			type: 1,
-			components: [
-
-				{
-					type: 2,
-					style: 2,
-					label: '\u200b \u200b Парень',
-					custom_id: 'choose_male',
-					emoji: '1221260906827087953'
-				},
-				{
-					type: 2,
-					style: 2,
-					label: '\u200b \u200b Девушка',
-					custom_id: 'choose_female',
-					emoji: '1221260896463093861'
-				}
-			]
-		}]
-	},
 
 
 
-	confirm: {
 
-		male: {
+
+
+
+module.exports = [
+
+{
+	name: 'verify',
+	cooldown: { time: 5000, member: new Map },
+
+	async run(interaction) {
+
+		if (await check(interaction)) return
+
+		await interaction.reply({
+
+			ephemeral: true,
+
+			embeds: [{
+
+				color: color.gray,
+				description: 'Для полного доступа к серверу выберите пол'
+			}],
+
+			components: [{
+
+				type: 1,
+				components: [
+
+					{
+						type: 2,
+						style: 2,
+						label: '\u200b \u200b Парень',
+						custom_id: 'choose_male',
+						emoji: '1221260906827087953'
+					},
+					{
+						type: 2,
+						style: 2,
+						label: '\u200b \u200b Девушка',
+						custom_id: 'choose_female',
+						emoji: '1221260896463093861'
+					}
+				]
+			}]
+		})
+	}
+},
+
+{
+	name: 'choose_male',
+	cooldown: { time: 5000, member: new Map },
+
+	async run(interaction) {
+
+		if (await check(interaction)) return
+
+		await interaction.update({
 
 			ephemeral: true,
 
@@ -65,9 +107,19 @@ const Embed = {
 					}
 				]
 			}]
-		},
+		})
+	}
+},
 
-		female: {
+{
+	name: 'choose_female',
+	cooldown: { time: 5000, member: new Map },
+
+	async run(interaction) {
+
+		if (await check(interaction)) return
+
+		await interaction.update({
 
 			ephemeral: true,
 
@@ -90,86 +142,17 @@ const Embed = {
 					}
 				]
 			}]
-		}
-	},
-
-
-
-	async check(interaction) {
-
-		let already = interaction.member._roles.some(r =>
-		[ config.roles.male, config.roles.female ].includes(r))
-
-		if (already) {
-
-			await interaction.reply({
-
-				ephemeral: true,
-				embeds: [{
-
-					color: color.gray,
-					description: `Вы уже верифицированы \u200b ${ emoji.positive }`
-				}]
-			})
-
-			return true
-		}
-	}
-}
-
-
-
-
-
-module.exports = [
-
-{
-	name: 'verify',
-
-	async run(interaction) {
-
-		if (await application.chill(interaction, 10000)) return
-
-		if (await Embed.check(interaction)) return
-
-		await interaction.reply(Embed.choose)
-	}
-},
-
-{
-	name: 'choose_male',
-
-	async run(interaction) {
-
-		if (await application.chill(interaction, 10000)) return
-
-		if (await Embed.check(interaction)) return
-
-		await interaction.update(Embed.confirm.male)
-	}
-},
-
-{
-	name: 'choose_female',
-
-	async run(interaction) {
-
-		if (await application.chill(interaction, 10000)) return
-
-		if (await Embed.check(interaction)) return
-
-		await interaction.update(Embed.confirm.female)
+		})
 	}
 },
 
 {
 	name: 'confirm_male',
+	cooldown: { time: 5000, member: new Map },
 
 	async run(interaction) {
 
-		if (await application.chill(interaction, 10000)) return
-
-		if (await Embed.check(interaction)) return
+		if (await check(interaction)) return
 
 		await interaction.member.roles.add(config.roles.male)
 
@@ -184,18 +167,17 @@ module.exports = [
 			components: []
 		})
 
-		client.emit('guildMemberVerify', interaction.member.id )
+		client.emit('guildMemberVerify', interaction.member.id)
 	}
 },
 
 {
 	name: 'confirm_female',
+	cooldown: { time: 5000, member: new Map },
 
 	async run(interaction) {
 
-		if (await application.chill(interaction, 10000)) return
-
-		if (await Embed.check(interaction)) return
+		if (await check(interaction)) return
 
 		await interaction.member.roles.add(config.roles.female)
 
@@ -210,7 +192,7 @@ module.exports = [
 			components: []
 		})
 
-		client.emit('guildMemberVerify', interaction.member.id )
+		client.emit('guildMemberVerify', interaction.member.id)
 	}
 }
 

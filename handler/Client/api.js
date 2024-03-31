@@ -23,7 +23,7 @@ $(Discord.VoiceChannel.prototype)
 			'Content-Type': 'application/json'
 		},
 
-		body: JSON.stringify({ string })
+		body: JSON.stringify({ status: string })
 	})
 
 	.catch(e => undefined)

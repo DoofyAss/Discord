@@ -9,52 +9,58 @@ $(application)
 
 
 
-	let id = interaction.customId
+	let name = interaction.customId
 
-	let root = this.components.find(c => c ?. name == id || c ?. name ?. includes(id))
+	let root = this.components.find(c => c.name == name)
 
 	if (! root)
-	return await application.reply.disabled(interaction)
+	return await application.reply.component_undefined(interaction)
 
 
 
 	let thread = [
 
-		root[interaction.customId],
+		root[name],
 		root.run
 
 	].find(fn => fn instanceof Function)
 
-	if (! thread)
-	return await application.reply.disabled(interaction)
-
-	thread.call(interaction, interaction)
-	.then(() => application.reply.component(interaction))
-	.catch(async (e) => await application.reply.component(interaction, e))
-})
 
 
+	let component = {
 
-
+		name,
+		thread,
+		cooldown: this.cooldown(root, interaction.member),
+		permission: this.permission(root, interaction.member)
+	}
 
 
 
+	if (! component.thread)
+	return await application.reply
+	.component_undefined(interaction)
+
+	if (component.permission)
+	return await application.reply
+	.component_permission(interaction, component)
+
+	if (component.cooldown)
+	return await application.reply
+	.component_cooldown(interaction, component)
 
 
 
-.add(async function chill(interaction, time) {
+	let arguments = {
 
-	let timer = Timer({
+		interaction: interaction,
+		member: interaction.member,
+		channel: interaction.channel
+	}
 
-		id: 'component',
-		custom: interaction.customId,
-		member: interaction.user.id
-	})
 
-	let remain = timer.remain ? true : ( timer.start(time), false )
 
-	if (remain)
-	await application.reply.chill(interaction, timer.left)
-
-	return remain
+	component.thread.call(arguments, interaction)
+	.then(() => application.reply.component_complete(interaction))
+	.catch(e => application.reply.component_complete(interaction, e))
 })

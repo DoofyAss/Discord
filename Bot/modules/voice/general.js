@@ -34,12 +34,22 @@ global.General = {
 
 
 
+		for (channel of channels.array)
+		if (channel.members.size == 0) {
+
+			channel.statusName = null
+
+			if (channel.name != 'канал')
+			await channel.edit({ name: 'канал' })
+		}
+
 		for (channel of invisible)
 		await this.edit(channel, false)
 
 		for (channel of visible)
 		await this.edit(channel, true)
 
+		for (channel of visible)
 		await this.status(channel.id)
 	},
 
@@ -55,8 +65,8 @@ global.General = {
 		// let developers = channel.members.filter(m =>
 		// m._roles.includes(config.roles.Developer)).size
 
-		// let homies = channel.members.filter(m =>
-		// m._roles.includes(config.roles.homie)).size
+		let homies = channel.members.filter(m =>
+		m._roles.includes(config.roles.homie)).size
 
 		// let boosters = channel.members.filter(m =>
 		// m._roles.includes(config.roles.booster)).size
@@ -75,12 +85,21 @@ global.General = {
 		if (males) status.push(`${ males } <:xx:1221260906827087953>`)
 		if (females) status.push(`${ females } <:xy:1221260896463093861>`)
 
+		if (homies) status.push(`<:role_Homie:1043345205019021422>`)
+
 		// if (admins) status.push(`<:role_Admin:1043344930145325086>`)
 		// if (developers) status.push(`<:role_Developer:1043344741812670515>`)
-		// if (homies) status.push(`<:role_Homie:1043345205019021422>`)
+
 		// if (boosters) status.push(`<:role_Booster:1043345216922472539>`)
 
-		await channel.status(status.join(' '))
+		let statusName = status.join(' ')
+
+		if (channel.members.size)
+		if (channel.statusName != statusName) {
+
+			channel.statusName = statusName
+			await channel.status(statusName)
+		}
 	},
 
 

@@ -28,8 +28,8 @@ $(application)
 		data: client.guild.roles.cache.get(id) ? `<@&${id}>` : `<@${id}>`
 	}))
 
-	let allow = dataAccess(data.allow)
-	let disallow = dataAccess(data.disallow)
+	let allow = dataAccess(data.allow || [])
+	let disallow = dataAccess(data.disallow || [])
 
 
 

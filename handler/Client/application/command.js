@@ -76,7 +76,7 @@ $(application)
 
 
 
-	command.thread.call(arguments)
+	command.thread.call(arguments, interaction)
 	.then(() => application.reply.complete(interaction))
 	.catch(e => application.reply.complete(interaction, e))
 })
