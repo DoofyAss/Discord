@@ -53,7 +53,8 @@ $(application)
 
 	let arguments = {
 
-		interaction: interaction,
+		root,
+		interaction,
 		member: interaction.member,
 		channel: interaction.channel
 	}

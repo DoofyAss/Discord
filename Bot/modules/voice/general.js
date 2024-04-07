@@ -59,38 +59,45 @@ global.General = {
 
 		let channel = client.guild.channels.cache.get(channel_id)
 
-		// let admins = channel.members.filter(m =>
-		// m._roles.includes(config.roles.Admin)).size
+		let status = []
 
-		// let developers = channel.members.filter(m =>
-		// m._roles.includes(config.roles.Developer)).size
 
-		let homies = channel.members.filter(m =>
-		m._roles.includes(config.roles.homie)).size
-
-		// let boosters = channel.members.filter(m =>
-		// m._roles.includes(config.roles.booster)).size
 
 		let males = channel.members.filter(m =>
 		m._roles.includes(config.roles.male)).size
 
+		if (males) status.push(`${ males } <:xx:1221260906827087953>`)
+
 		let females = channel.members.filter(m =>
 		m._roles.includes(config.roles.female)).size
 
-		let status = []
-
-		// if (males) status.push(`${ males } <:role_Male:1221259930829459619>`)
-		// if (females) status.push(`${ females } <:role_Female:1221259929428561991>`)
-
-		if (males) status.push(`${ males } <:xx:1221260906827087953>`)
 		if (females) status.push(`${ females } <:xy:1221260896463093861>`)
 
-		if (homies) status.push(`<:role_Homie:1043345205019021422>`)
 
-		// if (admins) status.push(`<:role_Admin:1043344930145325086>`)
-		// if (developers) status.push(`<:role_Developer:1043344741812670515>`)
 
-		// if (boosters) status.push(`<:role_Booster:1043345216922472539>`)
+		let homies = channel.members.filter(m =>
+		m._roles.includes(config.roles.homie)).size
+
+		if (homies) status.push(`<:homie:1226447390102523925>`)
+
+
+
+		// let homies = channel.members.filter(m =>
+		// m._roles.includes(config.roles.homie)).size
+
+		// if (homies) status.push(`${ homies } <:role_Homie:1043345205019021422>`)
+
+		// let boosters = channel.members.filter(m =>
+		// m._roles.includes(config.roles.booster)).size
+
+		// if (boosters) status.push(`${ boosters } <:role_Booster:1043345216922472539>`)
+
+		// let bananas = channel.members.filter(m =>
+		// m._roles.includes(config.roles.banana)).size
+
+		// if (bananas) status.push(`${ bananas } <:role_Banana:1043345228737814630>`)
+
+
 
 		let statusName = status.join(' ')
 
