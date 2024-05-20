@@ -66,26 +66,41 @@ global.General = {
 		let males = channel.members.filter(m =>
 		m._roles.includes(config.roles.male)).size
 
-		if (males) status.push(`${ males } <:xx:1221260906827087953>`)
+		if (males) status.push(`${ males } <:xy:1221260906827087953>`)
 
 		let females = channel.members.filter(m =>
 		m._roles.includes(config.roles.female)).size
 
-		if (females) status.push(`${ females } <:xy:1221260896463093861>`)
+		if (females) status.push(`${ females } <:xx:1221260896463093861>`)
+
+
+
+		let admins = channel.members.filter(m =>
+		m._roles.includes(config.roles.Admin)).size
+
+		let moderators = channel.members.filter(m =>
+		m._roles.includes(config.roles.Moderator)).size
+
+		let developers = channel.members.filter(m =>
+		m._roles.includes(config.roles.Developer)).size
 
 
 
 		let homies = channel.members.filter(m =>
 		m._roles.includes(config.roles.homie)).size
 
-		if (homies) status.push(`<:homie:1226447390102523925>`)
+		if (homies) {
+
+			let black = channel.members.find(m => m.id == '969978235116978316')
+			let murmurr = channel.members.find(m => m.id == '261499774740594696')
+
+			black && murmurr && channel.members.size == 2 ?
+			status.push(`<a:hearts_red:1238059305949986817>`) :
+
+			status.push(`<:homie:1226447390102523925>`)
+		}
 
 
-
-		// let homies = channel.members.filter(m =>
-		// m._roles.includes(config.roles.homie)).size
-
-		// if (homies) status.push(`${ homies } <:role_Homie:1043345205019021422>`)
 
 		// let boosters = channel.members.filter(m =>
 		// m._roles.includes(config.roles.booster)).size

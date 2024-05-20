@@ -172,3 +172,4 @@ global.color = {
 
 require('./api')
 require('./application')
+require('./voice')

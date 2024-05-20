@@ -72,7 +72,7 @@ const Role = {
 
 		// Level
 
-		if (memberLevel <= authorLevel) {
+		if (memberLevel <= authorLevel || a.member.user.bot) {
 
 			data = {
 

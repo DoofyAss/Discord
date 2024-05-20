@@ -5,7 +5,7 @@ const MySQL = require('mysql')
 
 
 
-let mysql = {
+const mysql = {
 
 	connect() {
 
