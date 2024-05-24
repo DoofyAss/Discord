@@ -1,6 +1,8 @@
 
 
 
+let antispam = require('./antispam')
+
 let bad = require('./bad')
 let del = require('./delete')
 let anime = require('./anime')
@@ -20,6 +22,8 @@ client.on('messageCreate', async m => {
 	m.content = m.content.toLowerCase().replace('ё', 'е')
 
 
+
+	if (await antispam(m)) return
 
 	if (await bad(m)) return
 	if (await del(m)) return

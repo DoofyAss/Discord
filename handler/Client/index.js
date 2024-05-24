@@ -145,6 +145,41 @@ $(client)
 
 
 
+Object.defineProperty(Date.prototype, 'tR', {
+
+	get: function() { return `<t:${ Date.parse(this) / 1000 }:R>` }
+})
+
+
+
+Object.defineProperty(Number.prototype, 'tR', {
+
+    get: function() { return `<t:${ parseInt(this / 1000) }:R>` }
+})
+
+
+
+Object.defineProperty(String.prototype, 'tR', {
+
+    get: function() { return `<t:${ parseInt(this / 1000) }:R>` }
+})
+
+
+
+Object.defineProperty(client, 'tR', {
+
+	get: () => Date.now().tR
+})
+
+
+
+
+
+
+
+
+
+
 global.emoji = {
 
 	get positive() { return [ '😀', '😇', '😉', '😏', '🤓', '😎' ].random },

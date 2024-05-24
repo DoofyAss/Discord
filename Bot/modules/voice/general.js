@@ -95,9 +95,9 @@ global.General = {
 			let murmurr = channel.members.find(m => m.id == '261499774740594696')
 
 			black && murmurr && channel.members.size == 2 ?
-			status.push(`<a:hearts_red:1238059305949986817>`) :
+			status.push(`<a:hearts_red:1238059305949986817>`) : null
 
-			status.push(`<:homie:1226447390102523925>`)
+			// status.push(`<:homie:1226447390102523925>`)
 		}
 
 
