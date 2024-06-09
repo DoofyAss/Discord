@@ -7,8 +7,6 @@ client.on('voiceStateUpdate', async (old_state, new_state) => {
 
 	let member = client.guild.members.cache.get(new_state.id)
 
-	if (member.user.bot) return
-
 	let O = old_state.channelId
 	let N = new_state.channelId
 
